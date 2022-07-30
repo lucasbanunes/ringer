@@ -145,6 +145,7 @@ fit_etbins = etbins.copy()
 fit_etabins = etabins.copy()
 if args.extra_bin:
     fit_etbins = fit_etbins.insert(-1, 100)
+    best_models.append(best_models[4].copy())
 data_filepath = os.path.join(datapath, args.dataset + '_et{ET}_eta{ETA}.npz')
 paths = [[ data_filepath.format(ET=et,ETA=eta) for eta in range(n_etas)] for et in range(n_ets)]
 ct  = fit_table(generator, fit_etbins , fit_etabins, 0.02, 0.5, 16, 60, xmin_percentage=0.05, xmax_percentage=99.95)
