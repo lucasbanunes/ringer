@@ -5,6 +5,7 @@ from kepler.pandas.decorators import create_ringer_v8_new_decorators, create_rin
 from kepler.pandas.decorators import create_ringer_v20_decorators
 
 import kepler
+from itertools import product
 import tqdm
 import rootplotlib as rpl
 import mplhep as hep
@@ -33,7 +34,7 @@ import warnings
 warnings.filterwarnings('ignore')
 plt.style.use(hep.style.ROOT)
 
-DROP_COLS = drop_columns = [
+drop_cols = drop_columns = [
                     'RunNumber', 
                     'trig_L2_cl_e2tsts1',
                     'trig_L2_el_hastrack',
@@ -71,11 +72,43 @@ DROP_COLS = drop_columns = [
                     'el_trans_TRT_PID',
                     'el_deltaPhi2',
                     'el_TaP_Mass',
-                ] 
+                ]
+
+boosted_chains = [
+    "HLT_e24_lhtight_nod0_{strategy}_v20_ivarloose",
+    "HLT_e26_lhtight_nod0_{strategy}_ivarloose",,
+    "HLT_e60_lhmedium_nod0_{strategy}_L1EM24VHI",
+    "HLT_e140_lhloose_nod0_{strategy}"
+]
+
+l1seeds = [
+    'L1_EM22VHI',
+    'L1_EM22VHI',
+    'L1_EM24VHI',
+    'L1_EM24VHI'
+]
+
+conf_names = [
+    'ElectronRingerLooseTriggerConfig.conf',
+    'ElectronRingerMediumTriggerConfig.conf',
+    'ElectronRingerTightTriggerConfig.conf',
+    'ElectronRingerVeryLooseTriggerConfig.conf'
+]
 
 def main(datasetpath, modelpaths):
     datafiles = glob.glob(os.path.join(datasetpath, '*.npz'))
 
-    
+    decorators = list()
+    strategies = list()
+    last_version = ''
+    for modelpath, conf_name in modelpaths, conf_names:
+        confpath = os.path.join(modelpath, conf_name)
+        env = ROOT.TEnv(confpath)
+        version = env.GetValue("__version__", '')
+        if last_version != version:
+            strategies.append(f'ringer_{version}')
+            last_version=version
+
+    # Load the data
     #data_df = load_in_loop(datafiles, drop_columns=drop_columns, decorators=decorators, chains=chains)
 
