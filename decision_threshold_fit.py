@@ -1,4 +1,7 @@
 import os
+import sys
+import logging
+from datetime import datetime
 from kolmov import crossval_table, get_color_fader, fit_table
 from saphyra.core import ReferenceReader
 import numpy as np
@@ -76,6 +79,19 @@ n_etas = len(etabins)-1
 if not os.path.exists(args.output_dir):
     os.makedirs(args.output_dir)
 
+start_time = datetime.today().strftime('%Y_%m_%d_%H_%M_%S')
+log_name = 'decision_threshold_fit_log'
+logger = logging.getLogger(log_name)
+logger.setLevel(logging.INFO)
+log_filename = f'{start_time}_{log_name}_pid_{os.getpid()}.log'
+file_handler = logging.FileHandler(log_filename, mode='a+')
+stdout_handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter('%(asctime)s;%(message)s')
+file_handler.setFormatter(formatter)
+stdout_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+logger.addHandler(stdout_handler)
+
 tuned_info = collections.OrderedDict( {
               # validation
               "max_sp_val"      : 'summary/max_sp_val',
@@ -93,14 +109,19 @@ tuned_info.update(create_op_dict('loose'))
 tuned_info.update(create_op_dict('vloose'))
 
 # Reading tunings and selecting the best ones
+logger.info('Reading crossval table')
 cv  = crossval_table( tuned_info, etbins = etbins , etabins = etabins )
 cv.fill(args.model_path, args.model_version)
 cv.table().to_csv(os.path.join(args.output_dir, 'cross_val_table.csv'))
+logger.info('Dumped crossval table')
 best_inits = cv.filter_inits("max_sp_val")  #Selects best the best modelo from each init from each fold
 best_inits.to_csv(os.path.join(args.output_dir, 'best_inits_table.csv'))
+logger.info('Dumped best inits table')
 best_sorts = cv.filter_sorts( best_inits , 'max_sp_op') #Selects the best init from all folds
 best_sorts.to_csv(os.path.join(args.output_dir, 'best_sorts.csv'))
+logger.info('Dumped best sorts table')
 best_models = cv.get_best_models(best_sorts, remove_last=True)  #Loads the best models and removes the activation layer
+logger.info('Loaded best models')
 
 # Loads the reference files
 homepath = os.path.expanduser('~')
@@ -113,6 +134,7 @@ references = ['tight_cutbased', 'medium_cutbased' , 'loose_cutbased', 'vloose_cu
 for et_bin in range(n_ets):
     for eta_bin in range(n_etas):
         for name in references:
+            logger.info(f'Loading reference for et bin:{et_bin} eta bin:{eta_bin} name{name}')
             refObj = ReferenceReader().load(ref_filepaths[et_bin][eta_bin])
             _pd = refObj.getSgnPassed(name)/refObj.getSgnTotal(name)
             fa = refObj.getBkgPassed(name)/refObj.getBkgTotal(name)
@@ -122,23 +144,29 @@ for et_bin in range(n_ets):
 fit_etbins = etbins.copy()
 fit_etabins = etabins.copy()
 if args.extra_bin:
-    fit_etbins = fit_etbins.insert(-2, 100)
+    fit_etbins = fit_etbins.insert(-1, 100)
 data_filepath = os.path.join(datapath, args.dataset + '_et{ET}_eta{ETA}.npz')
 paths = [[ data_filepath.format(ET=et,ETA=eta) for eta in range(n_etas)] for et in range(n_ets)]
 ct  = fit_table(generator, fit_etbins , fit_etabins, 0.02, 0.5, 16, 60, xmin_percentage=0.05, xmax_percentage=99.95)
 fit_name = f'correction_{args.model_version}_{args.dataset}'
+logger.info('Starting fitting thresholds')
 ct.fill(paths, best_models, ref_matrix, fit_name)
+logger.info('Finished fitting thresholds')
 fit_table = ct.table()
 fit_table.to_csv(os.path.join(args.output_dir, 'threshold_table.csv'))
+logger.info('Dumped fitting table')
 ct.dump_beamer_table(ct.table(), best_models, f'{args.dataset} {args.model_version} tuning', 
     fit_name + '.pdf')
+logger.info('Dumped beamer table')
 
 # Exporting models
 model_name_format = 'data17_13TeV_EGAM1_probes_lhmedium_EGAM7_vetolhvloose.model_{args.model_version}.electron{op}.et%d_eta%d'
 config_name_format = 'ElectronRinger{op}TriggerConfig.conf'
 for idx, op in enumerate(['Tight','Medium','Loose','VeryLoose']):
+    logger.info(f'Exporting model {op}')
     ct.export(best_models, 
               model_name_format.format(op=op), 
               config_name_format.format(op=op), 
               references[idx], 
               to_onnx='new')
+logger.info('Finished execution')
