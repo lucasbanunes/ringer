@@ -131,3 +131,17 @@ dmypy.json
 # Custom
 tunings/
 bin_analysis/
+*.conf
+*.pdf
+*.csv
+*.json
+*.C
+*.h5
+*.onnx
+*.nav
+*.out
+*.aux
+*.snm
+*.toc
+*.tex
+*.txt
