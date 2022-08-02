@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from pprint import pprint
 from copy import deepcopy
 from argparse import ArgumentParser
+from tensorflow import keras
 
 def create_op_dict(op):
     d = {
@@ -59,6 +60,17 @@ def generator( path ):
     avgmu = d['data'][:,0]
     
     return [data_rings], target, avgmu
+
+def add_extra_bin_models(best_models: list):
+    best_models.append(list())
+    for eta in range(5):
+        best_models[5].append({key: deepcopy(value) for key, value in best_models[4][eta].items() if key != 'model'})
+        cloned_model = keras.models.clone_model(best_models[4][eta]['model'])
+        cloned_model.set_weights(best_models[4][eta]['model'].get_weights())
+        best_models[5][-1]['model'] = cloned_model
+        best_models[5][-1]['etBinIdx'] = 5
+        best_models[5][-1]['etBin'][0] = 100
+        best_models[4][eta]['etBin'][-1] = 100
 
 
 parser = ArgumentParser(
@@ -122,27 +134,31 @@ best_sorts.to_csv(os.path.join(args.output_dir, 'best_sorts.csv'))
 logger.info('Dumped best sorts table')
 best_models = cv.get_best_models(best_sorts, remove_last=True)  #Loads the best models and removes the activation layer
 logger.info('Loaded best models')
+if args.extra_bin:
+    logger.info('Adding extra bin to models')
+    add_extra_bin_models(best_models)
+    logger.info('Added extra bin to models')
 
 # Loads the reference files
 homepath = os.path.expanduser('~')
 datapath = os.path.join(homepath, 'data', args.dataset)
 refpath = os.path.join(datapath, 'references')
 ref_filepath = os.path.join(refpath, args.dataset + '_et{ET}_eta{ETA}.ref.pic.gz')
-ref_filepaths = [[ ref_filepath.format(ET=et,ETA=eta) for eta in range(n_etas)] for et in range(n_ets)]
-ref_matrix = [[ {} for eta in range(n_etas)] for et in range(n_ets)]
+ref_ets = n_ets+1 if args.extra_bin else n_ets
+ref_matrix = [[ {} for eta in range(n_etas)] for et in range(ref_ets)]
 references = ['tight_cutbased', 'medium_cutbased' , 'loose_cutbased', 'vloose_cutbased']
-for et_bin in range(n_ets):
+for et_bin in range(ref_ets):
     for eta_bin in range(n_etas):
         for name in references:
             logger.info(f'Loading reference for et bin:{et_bin} eta bin:{eta_bin} name{name}')
-            refObj = ReferenceReader().load(ref_filepaths[et_bin][eta_bin])
+            refObj = ReferenceReader().load(ref_filepath.format(ET=et_bin,ETA=eta_bin))
             _pd = refObj.getSgnPassed(name)/refObj.getSgnTotal(name)
             fa = refObj.getBkgPassed(name)/refObj.getBkgTotal(name)
             ref_matrix[et_bin][eta_bin][name] = {'pd':_pd, 'fa':fa, 'pd_epsilon':0}
 
 # Fitting thresholds
-fit_etbins = etbins.copy()
-fit_etabins = etabins.copy()
+fit_etbins = deepcopy(etbins)
+fit_etabins = deepcopy(etabins)
 if args.extra_bin:
     fit_etbins = fit_etbins.insert(-1, 100)
     best_models.append(best_models[4].copy())
