@@ -131,3 +131,4 @@ dmypy.json
 # Custom
 tunings/
 bin_analysis/
+trigger_analysis/
