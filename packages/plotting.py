@@ -171,24 +171,26 @@ def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, f
     root_plots = np.array(root_plots)
 
     labels = list()
+    val_label = 'F_{R}' if fake else 'P_{D}'
     for i, trigger_strat in enumerate(trigger_strategies):
         if trigger_strat == 'noringer':
             label_name = 'NoRinger'
         else:
             label_name = ''.join([word.capitalize() for word in trigger_strat.split('_')])
-        labels.append('%s - F_{R} (%s): %1.2f %%' %(label_name, step, root_plots[i, 1]*100))
+        
+        labels.append('%s - %s (%s): %1.2f %%' %(label_name, val_label, step, root_plots[i, 1]*100))
     
     fig = rpl.create_canvas('my_canvas', canw=1400, canh=1000)
-    fig = rpl.plot_profiles(root_plots[:,0], 'E_{T} [GeV]', COLORS[n_strats], MARKERS[:n_strats])
+    fig = rpl.plot_profiles(root_plots[:,0], 'E_{T} [GeV]', COLORS[:n_strats], MARKERS[:n_strats])
     rpl.format_canvas_axes(YTitleOffset = 0.95)
-    add_legend( 0.55,0.15, labels)
+    add_legend(0.50,0.15, labels)
     rpl.add_text( 0.55, 0.35, '%s_%s_%s_nod0' %(step, chain_name.split('_')[0], chain_name.split('_')[1]), textsize=0.04)
     rpl.fix_yaxis_ranges( ignore_zeros=True, ignore_errors=True , yminf=-0.5, ymaxf=1.1)
     val_name = 'fr' if fake else 'pd'
     plot_name = os.path.join(output_dir, f'{val_name}_{var}_{step}_{chain_name.split("_")[0]}_{chain_name.split("_")[1]}_root')
     fig.savefig(plot_name + '.pdf')
     fig.savefig(plot_name + '.png')
-    return plot_name, fig
+    return plot_name, fig, labels
 
 def make_perfomance_plot_figs(data, steps, chain_names, trigger_strategies, output_dir, vars, fake):
     pass

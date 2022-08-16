@@ -27,15 +27,15 @@ class RingGenerator(object):
         selected_rings = list()
         for layer, ring_range in RINGS_LAYERS.items():
             start_ring, end_ring = ring_range
-            n_rings = start_ring-end_ring-1     # Minus 1 for accounting the range in python
-            real_ring_end = start_ring + np.floor(self.ring_percentage*n_rings)
+            n_rings = end_ring-start_ring
+            real_ring_end = start_ring + int(np.floor(self.ring_percentage*n_rings))
             selected_rings.append(np.arange(start_ring, real_ring_end))
         #The sort is to garantee order in every python version
-        self.selected_rings = np.array([RING_COL_NAME.format(ring_num) for ring_num in np.sort(np.concat(selected_rings, axis=0))])
+        self.selected_rings = np.array([RING_COL_NAME.format(ring_num=ring_num) for ring_num in np.sort(np.concatenate(selected_rings, axis=0))])
 
     def __call__(self, data):
         rings = data[self.selected_rings].values.astype(np.float32)
-        rings = self._normalize(data)
+        rings = self._normalize(rings)
         return [rings]
     
     def _normalize(self, data):
@@ -44,7 +44,8 @@ class RingGenerator(object):
         return data/norms[:,None]
 
 # Defaults to all rings
-version_generators = defaultdict(RingGenerator())
-version_generators[12] = RingGenerator(0.5)
-version_generators[18] = RingGenerator(0.75)
-version_generators[19] = RingGenerator(0.25)
+default_percentage = lambda : 1.
+ring_percentages = defaultdict(default_percentage)
+ring_percentages['v12'] = 0.5
+ring_percentages['v18'] = 0.75
+ring_percentages['v19'] = 0.25
