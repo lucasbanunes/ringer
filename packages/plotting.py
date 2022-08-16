@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 from Gaugi.constants import GeV, MeV
 import rootplotlib as rpl
 
@@ -6,7 +7,12 @@ import root_numpy
 import ROOT
 ROOT.gStyle.SetOptStat(0);
 import array
+import os
+from itertools import product
 
+# Add more
+COLORS = [ROOT.kBlack, ROOT.kBlue+1, ROOT.kGreen+1, ROOT.kRed+1]
+MARKERS = [33, 22, 23, 30]
 
 def hist1d( name, values, bins, density=False ):
     counts, dummy = np.histogram(values, bins=bins, density=density )
@@ -18,6 +24,7 @@ def add_legend(x, y, legends):
     rpl.add_legend( legends, x, y, x+0.98, y+0.20, textsize=12, option='p' )
 
 def make_et_plot(dataframe, chain, chain_step, l2suffix, fake=False):
+    from Gaugi.constants import GeV
     # plot in eta need sum 1 in chain threshold 
 
     m_bins = [4,7,10,15,20,25,30,35,40,45,50,60,80,150,300] # et_bins
@@ -140,3 +147,57 @@ def make_mu_plot(dataframe, chain, chain_step, l2suffix, fake=False):
     h_eff = rpl.hist1d.divide(h_num,h_den) 
     
     return h_eff, len(passed)/len(total)
+
+var2plot_func = {
+    'et': make_et_plot,
+    'pt': make_pt_plot,
+    'mu': make_mu_plot,
+    'eta': make_eta_plot
+}
+
+def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, fake=False):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    try: 
+        plot_func = var2plot_func[var]
+    except KeyError:
+        raise ValueError(f'There is no plot funcion for the variable {var}')
+    
+    trigger = f'{step}_{chain_name}'
+    n_strats = len(trigger_strategies)
+    root_plots = [plot_func(data, trigger.format(strategy=strat), chain_step=step, l2suffix=strat, fake=fake)
+        for strat in trigger_strategies]
+    root_plots = np.array(root_plots)
+
+    labels = list()
+    for i, trigger_strat in enumerate(trigger_strategies):
+        if trigger_strat == 'noringer':
+            label_name = 'NoRinger'
+        else:
+            label_name = ''.join([word.capitalize() for word in trigger_strat.split('_')])
+        labels.append('%s - F_{R} (%s): %1.2f %%' %(label_name, step, root_plots[i, 1]*100))
+    
+    fig = rpl.create_canvas('my_canvas', canw=1400, canh=1000)
+    fig = rpl.plot_profiles(root_plots[:,0], 'E_{T} [GeV]', COLORS[n_strats], MARKERS[:n_strats])
+    rpl.format_canvas_axes(YTitleOffset = 0.95)
+    add_legend( 0.55,0.15, labels)
+    rpl.add_text( 0.55, 0.35, '%s_%s_%s_nod0' %(step, chain_name.split('_')[0], chain_name.split('_')[1]), textsize=0.04)
+    rpl.fix_yaxis_ranges( ignore_zeros=True, ignore_errors=True , yminf=-0.5, ymaxf=1.1)
+    val_name = 'fr' if fake else 'pd'
+    plot_name = os.path.join(output_dir, f'{val_name}_{var}_{step}_{chain_name.split("_")[0]}_{chain_name.split("_")[1]}_root')
+    fig.savefig(plot_name + '.pdf')
+    fig.savefig(plot_name + '.png')
+    return plot_name, fig
+
+def make_perfomance_plot_figs(data, steps, chain_names, trigger_strategies, output_dir, vars, fake):
+    pass
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    figs = dict()
+    for step, chain_name, var in product(steps, chain_names, vars):
+        plot_name, fig = make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, fake)
+        figs[plot_name] = fig
+    
+    return figs

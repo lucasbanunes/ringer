@@ -1,8 +1,8 @@
 from kepler.pandas.menu       import ElectronSequence as Chain
 from kepler.pandas.readers    import load, load_in_loop
-from kepler.pandas.decorators import create_ringer_v8_decorators, create_ringer_v9_decorators, RingerDecorator
-from kepler.pandas.decorators import create_ringer_v8_new_decorators, create_ringer_v8_half_fast_decorators, create_ringer_v8_34_decorators, create_ringer_v8_half_decorators
-from kepler.pandas.decorators import create_ringer_v20_decorators
+from kepler.pandas.decorators import RingerDecorator
+from collections import defaultdict
+from typing import List
 
 import kepler
 from itertools import product
@@ -22,6 +22,8 @@ import os
 from pprint import pprint
 from copy import deepcopy
 import gc
+import logging
+from datetime import datetime
 
 
 import matplotlib.pyplot as plt
@@ -33,6 +35,9 @@ import mplhep as hep
 import warnings
 warnings.filterwarnings('ignore')
 plt.style.use(hep.style.ROOT)
+
+from packages.generators import version_generators
+from packages.plotting import make_plot_fig
 
 drop_cols = drop_columns = [
                     'RunNumber', 
@@ -74,19 +79,27 @@ drop_cols = drop_columns = [
                     'el_TaP_Mass',
                 ]
 
-boosted_chains = [
-    "HLT_e24_lhtight_nod0_{strategy}_v20_ivarloose",
-    "HLT_e26_lhtight_nod0_{strategy}_ivarloose",,
-    "HLT_e60_lhmedium_nod0_{strategy}_L1EM24VHI",
-    "HLT_e140_lhloose_nod0_{strategy}"
-]
+# base_chain_names = ['e24_lhtight_nod0_{RINGER}_ivarloose',
+#               'e26_lhtight_nod0_{RINGER}_ivarloose',
+#               'e60_lhmedium_nod0_{RINGER}_L1EM24VHI',
+#               'e140_lhloose_nod0_{RINGER}'
+# ]
 
-l1seeds = [
-    'L1_EM22VHI',
-    'L1_EM22VHI',
-    'L1_EM24VHI',
-    'L1_EM24VHI'
-]
+# trigger_steps = ['L2Calo', 'L2', 'EFCalo', 'HLT']
+
+# boosted_chains = [
+#     "HLT_e24_lhtight_nod0_{strategy}_v20_ivarloose",
+#     "HLT_e26_lhtight_nod0_{strategy}_ivarloose",,
+#     "HLT_e60_lhmedium_nod0_{strategy}_L1EM24VHI",
+#     "HLT_e140_lhloose_nod0_{strategy}"
+# ]
+
+l1seeds_per_energy = {
+    24: 'L1_EM22VHI',
+    26: 'L1_EM22VHI',
+    60: 'L1_EM24VHI',
+    140: 'L1_EM24VHI'
+}
 
 conf_names = [
     'ElectronRingerLooseTriggerConfig.conf',
@@ -95,20 +108,68 @@ conf_names = [
     'ElectronRingerVeryLooseTriggerConfig.conf'
 ]
 
-def main(datasetpath, modelpaths):
-    datafiles = glob.glob(os.path.join(datasetpath, '*.npz'))
+criteria = ['tight', 'medium', 'loose', 'vloose']
 
+# plot_vars = ['et', 'eta', 'pt', 'mu']
+
+def get_logger():
+    logger = logging.getLogger('analysis_logger')
+    logger.setLevel(logging.INFO)
+    now = datetime.today().strftime('%Y_%m_%d_%H_%M_%S')
+    log_filename = f'run_analysis_{now}'
+    file_handler = logging.FileHandler(log_filename, mode='w')
+    formatter = logging.Formatter('%(asctime)s,%(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+    return logger
+
+def main(datasetpath: str, modelpaths: List[str], output_dir: str, 
+         plot_vars: List[str], chain_names: List[str], trigger_steps: List[str], 
+         dev=False):
+    """
+    datasetpath: str
+    """
+    # Getting logger
+    analysis_logger = get_logger()
+
+    analysis_logger.info('Building decorators')
     decorators = list()
-    strategies = list()
-    last_version = ''
-    for modelpath, conf_name in modelpaths, conf_names:
+    trigger_strategies = list()
+    for modelpath, conf_criterion in product(modelpaths, zip(conf_names, criteria)):
+        conf_name, criterion = conf_criterion
         confpath = os.path.join(modelpath, conf_name)
         env = ROOT.TEnv(confpath)
-        version = env.GetValue("__version__", '')
-        if last_version != version:
-            strategies.append(f'ringer_{version}')
-            last_version=version
+        ringer_version = env.GetValue("__version__", '')
+        ringer_name = f'ringer_{ringer_version}'
+        decorator = RingerDecorator(f'{ringer_name}_{criterion}', confpath, version_generators[ringer_version])
+        decorators.append(decorator)
+        if not ringer_version in trigger_strategies:
+            trigger_strategies.append(ringer_name)
+    
+    analysis_logger.info('Building chains')
+    chains = list()
+    step_chain_names = list()
+    for step, chain_name, strategy, criterion in product(trigger_steps, chain_names, trigger_strategies, criteria):
+        step_chain_name = f'{step}_{chain_name.format(strategy)}'
+        step_chain_names.append(step_chain_name)
+        energy = int(chain_name.split('_')[0][1:])
+        l1seed = l1seeds_per_energy[energy]
+        l2calo_column = f'{strategy}_{criterion}'
+        chain = Chain(step_chain_name, L1Seed=l1seed, l2calo_column=l2calo_column)
+        chains.append(chain)
 
-    # Load the data
-    #data_df = load_in_loop(datafiles, drop_columns=drop_columns, decorators=decorators, chains=chains)
+    analysis_logger.info('Loading the data')
+    datafiles = glob.glob(os.path.join(datasetpath, '*.npz'))
+    data = load_in_loop(datafiles, drop_columns=drop_cols, decorators=decorators, chains=chains)
 
+    analysis_logger.info('Making plots')
+    figs = dict()
+    for fake, step, chain_name, var in tqdm(product([True, False], trigger_steps, chain_names, plot_vars)):
+        val_name = 'fr' if fake else 'pd'
+        plot_dir = os.path.join(output_dir, val_name, var)
+        plot_name, fig = make_plot_fig(data, step, chain_name, trigger_strategies, plot_dir , var, fake)
+        analysis_logger.info(f'Plotted {plot_name}')
+        figs[plot_name] = fig
