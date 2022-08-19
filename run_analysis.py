@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 from argparse import ArgumentParser
 
 from packages.generators import ring_percentages, RingGenerator
-from packages.plotting import make_plot_fig
+from packages.plotting import make_plot_fig, var2plot_func, val_label_map
 from packages.utils import get_logger
 
 drop_cols = drop_columns = [
@@ -87,13 +87,15 @@ steps_choices = ['L2Calo', 'L2', 'EFCalo', 'HLT']
 
 def parse_args():
     chain_choices = list(energy_chains.keys())
+    var_choices = list(var2plot_func.keys())
+    val_choices = list(val_label_map.keys())
     parser = ArgumentParser()
     parser.add_argument('--dataset', required=True, help='dataset directory path', dest='datasetpath')
     parser.add_argument('--models', nargs='+', required=True, help='models directory path, can be more than one', dest='modelpaths')
     parser.add_argument('--out', required=True, help='output directory for the plots', dest='output_dir')
     parser.add_argument('--cutbased', action='store_true', help='if passed, plots the cutbased results')
-    parser.add_argument('--vars', nargs='+', required=True, help='x axis variables for the plots', dest='plot_vars')
-    parser.add_argument('--values', nargs='+', choices=['pd', 'fr'], required=True, help='which values will be plotted')
+    parser.add_argument('--vars', nargs='+', choices=var_choices, default=var_choices, help='x axis variables for the plots', dest='plot_vars')
+    parser.add_argument('--values', nargs='+', choices=val_choices, default=val_choices, help='which values will be plotted')
     parser.add_argument('--chains', nargs='+', default=chain_choices, choices=chain_choices, help='chains to be plotted, defults to all chains', type=int, dest='chain_names')
     parser.add_argument('--steps', nargs='+', default=steps_choices, choices=steps_choices, help='trigger steps to be plotted defaults to all steps', dest='trigger_steps')
     parser.add_argument('--dev', action='store_true', help='if passed, runs the code only with the leblon region')

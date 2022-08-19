@@ -45,38 +45,28 @@ def add_legend(x, y, legends):
 
 def make_et_plot(dataframe, chain, chain_step, l2suffix, value):
     from Gaugi.constants import GeV
-    # plot in eta need sum 1 in chain threshold 
 
     m_bins = [4,7,10,15,20,25,30,35,40,45,50,60,80,150,300] # et_bins
-    #m_bins = [15, 20, 30, 40, 50, 1000000]
-    #m_bins = np.arange(3, 16, step=.5).tolist()
     et_cut  = int(chain.split('_')[1][1:])
     offline = chain.split('_')[2]
     if value == 'fr':
-        #aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_lhvloose != 1) &\
         aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_et >= (et_cut - 5)*GeV) & (np.abs(dataframe.el_eta) <=2.47)]
     elif value == 'pd':
         aux_df = dataframe.loc[(dataframe.target == 1) & (dataframe['el_%s' %(offline)] == 1) & (dataframe.el_et >= (et_cut - 5)*GeV) & (np.abs(dataframe.el_eta) <=2.47)]
     else:
         raise ValueError(f'There is no handler for value {value}')
     
-    #step_decision = chain_step + '_' + '_'.join(chain.split('_')[1:])
     step_decision = chain
-    #'L2Calo_e26_lhtight_nod0_ringer_v8_34_ivarloose'
-    # cuts for all
     total   = aux_df
     passed  = aux_df.loc[(aux_df[step_decision] == 1)]
     
     h_num = hist1d('et_num', passed['el_et']/GeV, m_bins )
-    #                                       /GeV
     h_den = hist1d('et_den', total['el_et']/GeV, m_bins )
-    #                                      /GeV
     h_eff = rpl.hist1d.divide(h_num,h_den) 
     
     return h_eff, len(passed)/len(total)
 
 def make_eta_plot(dataframe, chain, chain_step, l2suffix, value):
-    # plot in eta need sum 1 in chain threshold 
 
     m_bins = [-2.47,-2.37,-2.01,-1.81,-1.52,-1.37,-1.15,-0.80,-0.60,-0.10,0.00,
               0.10, 0.60, 0.80, 1.15, 1.37, 1.52, 1.81, 2.01, 2.37, 2.47]
@@ -84,17 +74,13 @@ def make_eta_plot(dataframe, chain, chain_step, l2suffix, value):
     et_cut  = int(chain.split('_')[1][1:])
     offline = chain.split('_')[2]
     if value == 'fr':
-        #aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_lhvloose != 1) &\
         aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_et >= (et_cut - 5)*GeV) & (np.abs(dataframe.el_eta) <=2.47)]
     elif value == 'pd':
         aux_df = dataframe.loc[(dataframe.target == 1) & (dataframe['el_%s' %(offline)] == 1) & (dataframe.el_et >= (et_cut - 5)*GeV) & (np.abs(dataframe.el_eta) <=2.47)]
     else:
         raise ValueError(f'There is no handler for value {value}')
     
-    #step_decision = chain_step + '_' + '_'.join(chain.split('_')[1:])
     step_decision = chain
-    #'L2Calo_e26_lhtight_nod0_ringer_v8_34_ivarloose'
-    # cuts for all
     total   = aux_df
     passed  = aux_df.loc[(aux_df[step_decision] == 1)]
     
@@ -105,63 +91,67 @@ def make_eta_plot(dataframe, chain, chain_step, l2suffix, value):
     return h_eff, len(passed)/len(total)
 
 def make_pt_plot(dataframe, chain, chain_step, l2suffix, value):
-    # plot in eta need sum 1 in chain threshold 
 
-    #m_bins = [4,7,10,15,20,25,30,35,40,45,50,60,80,150,300] # et_bins
-    #m_bins = [15, 20, 30, 40, 50, 1000000]
     m_bins = np.arange(0, 2000*10**3//2, step=50*10**3).tolist()
     et_cut  = int(chain.split('_')[1][1:])
     offline = chain.split('_')[2]
     if value == 'fr':
-        #aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_lhvloose != 1) &\
         aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_et >= (et_cut - 5)*GeV) & (np.abs(dataframe.el_eta) <=2.47)]
     elif value == 'pd':
         aux_df = dataframe.loc[(dataframe.target == 1) & (dataframe['el_%s' %(offline)] == 1) & (dataframe.el_et >= (et_cut - 5)*GeV) & (np.abs(dataframe.el_eta) <=2.47)]
     else:
         raise ValueError(f'There is no handler for value {value}')
     
-    #step_decision = chain_step + '_' + '_'.join(chain.split('_')[1:])
     step_decision = chain
-    #'L2Calo_e26_lhtight_nod0_ringer_v8_34_ivarloose'
-    # cuts for all
     total   = aux_df
     passed  = aux_df.loc[(aux_df[step_decision] == 1)]
     
     h_num = hist1d('pt_num', passed['trig_L2_el_pt']/MeV, m_bins )
-    #                                               /GeV
     h_den = hist1d('pt_den', total['trig_L2_el_pt']/MeV, m_bins )
-    #                                              /GeV
     h_eff = rpl.hist1d.divide(h_num,h_den) 
     
     return h_eff, len(passed)/len(total)
 
 def make_mu_plot(dataframe, chain, chain_step, l2suffix, value):
-    # plot in eta need sum 1 in chain threshold 
 
     m_bins = [10, 20, 30, 40, 50, 60, 70] # et_bins
-    #m_bins = [15, 20, 30, 40, 50, 1000000]
-    #m_bins = np.arange(0, 2000*10**3, step=50*10**3).tolist()
     et_cut  = int(chain.split('_')[1][1:])
     offline = chain.split('_')[2]
     if value == 'fr':
-        #aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_lhvloose != 1) &\
         aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_et >= (et_cut - 5)*GeV) & (np.abs(dataframe.el_eta) <=2.47)]
     elif value == 'pd':
         aux_df = dataframe.loc[(dataframe.target == 1) & (dataframe['el_%s' %(offline)] == 1) & (dataframe.el_et >= (et_cut - 5)*GeV) & (np.abs(dataframe.el_eta) <=2.47)]
     else:
         raise ValueError(f'There is no handler for value {value}')
     
-    #step_decision = chain_step + '_' + '_'.join(chain.split('_')[1:])
     step_decision = chain
-    #'L2Calo_e26_lhtight_nod0_ringer_v8_34_ivarloose'
-    # cuts for all
     total   = aux_df
     passed  = aux_df.loc[(aux_df[step_decision] == 1)]
     
     h_num = hist1d('mu_num', passed['avgmu']/MeV, m_bins )
-    #                                               /GeV
     h_den = hist1d('mu_den', total['avgmu']/MeV, m_bins )
-    #                                              /GeV
+    h_eff = rpl.hist1d.divide(h_num,h_den) 
+    
+    return h_eff, len(passed)/len(total)
+
+def make_dr_plot(dataframe, chain, chain_step, l2suffix, value):
+
+    m_bins = [0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.35, 0.40, 0.6]
+    et_cut  = int(chain.split('_')[1][1:])
+    if value == 'fr':
+        aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_et >= (et_cut - 5)*GeV) & (np.abs(dataframe.el_eta) <=2.47)]
+    elif value == 'pd':
+        offline = chain.split('_')[2]
+        aux_df = dataframe.loc[(dataframe.target == 1) & (dataframe['el_%s' %(offline)] == 1) & (dataframe.el_et >= (et_cut - 5)*GeV) & (np.abs(dataframe.el_eta) <=2.47)]
+    else:
+        raise ValueError(f'There is no handler for value {value}')
+    
+    step_decision = chain
+    total   = aux_df
+    passed  = aux_df.loc[(aux_df[step_decision] == 1)]
+    
+    h_num = hist1d('dr_b_num', passed['el_TaP_deltaR'], m_bins )
+    h_den = hist1d('dr_b_den', total['el_TaP_deltaR'], m_bins )
     h_eff = rpl.hist1d.divide(h_num,h_den) 
     
     return h_eff, len(passed)/len(total)
@@ -170,7 +160,8 @@ var2plot_func = {
     'et': make_et_plot,
     'pt': make_pt_plot,
     'mu': make_mu_plot,
-    'eta': make_eta_plot
+    'eta': make_eta_plot,
+    'dr': make_dr_plot
 }
 
 val_label_map = {
