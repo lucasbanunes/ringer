@@ -169,7 +169,7 @@ val_label_map = {
     'fr': 'F_{R}'
 }
 
-def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, value, joblib_dump):
+def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, value, joblib_dump, markers, colors):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
@@ -194,8 +194,10 @@ def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, v
         
         labels.append('%s - %s (%s): %1.2f %%' %(label_name, val_label_map[value], step, root_plots[i, 1]*100))
     
+    colors = COLORS[:n_strats] if colors is None else colors
+    markers = MARKERS[:n_strats] if markers is None else markers
     fig = rpl.create_canvas('my_canvas', canw=1400, canh=1000)
-    fig = rpl.plot_profiles(root_plots[:,0], 'E_{T} [GeV]', COLORS[:n_strats], MARKERS[:n_strats])
+    fig = rpl.plot_profiles(root_plots[:,0], 'E_{T} [GeV]', colors, markers)
     rpl.format_canvas_axes(YTitleOffset = 0.95)
     add_legend(0.55,0.15, labels)
     rpl.add_text( 0.55, 0.35, '%s_%s_%s_nod0' %(step, chain_name.split('_')[0], chain_name.split('_')[1]), textsize=0.04)

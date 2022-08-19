@@ -100,13 +100,15 @@ def parse_args():
     parser.add_argument('--steps', nargs='+', default=steps_choices, choices=steps_choices, help='trigger steps to be plotted defaults to all steps', dest='trigger_steps')
     parser.add_argument('--dev', action='store_true', help='if passed, runs the code only with the leblon region')
     parser.add_argument('--log', action='store_true', help='if passed, creates a log file with script activity')
+    parser.add_argument('--markers', nargs='+', help='marker codes for each model passed', default=None, type=int)
+    parser.add_argument('--colors', nargs='+', help='color codes for each model passed', default=None, type=int)
     args = parser.parse_args().__dict__
     args['chain_names'] = [energy_chains[energy] for energy in args['chain_names']]
     return args
 
 def run_analysis(datasetpath: str, modelpaths: List[str], output_dir: str, cutbased: bool, 
          plot_vars: List[str], values: List[str], chain_names: List[str], trigger_steps: List[str], 
-         dev: bool, **kwargs):
+         dev: bool, markers: List[int], colors: List[int], **kwargs):
 
     analysis_logger.info('Building decorators')
     decorators = list()
@@ -151,7 +153,7 @@ def run_analysis(datasetpath: str, modelpaths: List[str], output_dir: str, cutba
     for value, var, chain_name, step in product(values, plot_vars, chain_names, trigger_steps):
         plot_dir = os.path.join(output_dir, value, var)
         analysis_logger.info(f'Plotting value: {value}, step: {step}, chain_name: {chain_name}, var: {var}')
-        make_plot_fig(data, step, chain_name, trigger_strategies, plot_dir , var, value, joblib_dump=True)
+        make_plot_fig(data, step, chain_name, trigger_strategies, plot_dir , var, value, markers=markers, colors=colors, joblib_dump=True)
 
 if __name__ == '__main__':
     args = parse_args()
