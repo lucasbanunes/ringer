@@ -88,9 +88,9 @@ steps_choices = ['L2Calo', 'L2', 'EFCalo', 'HLT']
 def parse_args():
     chain_choices = list(energy_chains.keys())
     parser = ArgumentParser()
-    parser.add_argument('--dataset', nargs=1, required=True, help='dataset directory path', dest='datasetpath')
+    parser.add_argument('--dataset', required=True, help='dataset directory path', dest='datasetpath')
     parser.add_argument('--models', nargs='+', required=True, help='models directory path, can be more than one', dest='modelpaths')
-    parser.add_argument('--out', nargs=1, required=True, help='output directory for the plots', dest='output_dir')
+    parser.add_argument('--out', required=True, help='output directory for the plots', dest='output_dir')
     parser.add_argument('--cutbased', action='store_true', help='if passed, plots the cutbased results')
     parser.add_argument('--vars', nargs='+', required=True, help='x axis variables for the plots', dest='plot_vars')
     parser.add_argument('--values', nargs='+', choices=['pd', 'fr'], required=True, help='which values will be plotted')
@@ -104,22 +104,21 @@ def parse_args():
 
 def run_analysis(datasetpath: str, modelpaths: List[str], output_dir: str, cutbased: bool, 
          plot_vars: List[str], values: List[str], chain_names: List[str], trigger_steps: List[str], 
-         dev: bool, log: bool):
-
-    analysis_logger = get_logger('run_analysis', file=log)
+         dev: bool, **kwargs):
 
     analysis_logger.info('Building decorators')
     decorators = list()
     trigger_strategies = ['noringer'] if cutbased else list()
-    for modelpath, conf_criterion in product(modelpaths, criteria_conf_names.keys()):
+    for modelpath, criterion in product(modelpaths, criteria_conf_names.keys()):
         conf_name = criteria_conf_names[criterion]
         confpath = os.path.join(modelpath, conf_name)
         env = ROOT.TEnv(confpath)
         ringer_version = env.GetValue("__version__", '')
         ringer_name = f'ringer_{ringer_version}'
-        decorator = RingerDecorator(f'{ringer_name}_{criterion}', confpath, version_generators[ringer_version])
+        analysis_logger.info(f'Building decorator for {confpath}. Version: {ringer_version}')
+        decorator = RingerDecorator(f'{ringer_name}_{criterion}', confpath, RingGenerator(ring_percentages[ringer_version]))
         decorators.append(decorator)
-        if not ringer_version in trigger_strategies:
+        if not ringer_name in trigger_strategies:
             trigger_strategies.append(ringer_name)
     
     analysis_logger.info('Building chains')
@@ -141,20 +140,22 @@ def run_analysis(datasetpath: str, modelpaths: List[str], output_dir: str, cutba
         chains.append(chain)
 
     analysis_logger.info('Loading the data')
-    filename_end = '*et4_eta0.npz' if dev else '*.npz'    #If dev, loads leblon
+    filename_end = '*et4_eta4.npz' if dev else '*.npz'    #If dev, loads leblon
     datafiles = glob.glob(os.path.join(datasetpath, filename_end))  
+    analysis_logger.info(f'glob_path: {os.path.join(datasetpath, filename_end)}')
     data = load_in_loop(datafiles, drop_columns=drop_cols, decorators=decorators, chains=chains)
 
     analysis_logger.info('Making plots')
-    figs = dict()
-    labels = dict()
     for value, var, chain_name, step in product(values, plot_vars, chain_names, trigger_steps):
-        plot_dir = os.path.join(output_dir, value_name, var)
+        plot_dir = os.path.join(output_dir, value, var)
         analysis_logger.info(f'Plotting value: {value}, step: {step}, chain_name: {chain_name}, var: {var}')
-        plot_name, fig, label = make_plot_fig(data, step, chain_name, trigger_strategies, plot_dir , var, value)
-        figs[plot_name] = fig
-        labels[plot_name] = label
+        make_plot_fig(data, step, chain_name, trigger_strategies, plot_dir , var, value, joblib_dump=True)
 
 if __name__ == '__main__':
     args = parse_args()
+    analysis_logger = get_logger('run_analysis', file=args['log'])
+    analysis_logger.info('Script start')
+    analysis_logger.info('Parsed args')
+    for key, value in args.items():
+        analysis_logger.info(f'{key}: {value}')
     run_analysis(**args)

@@ -8,10 +8,31 @@ ROOT.gStyle.SetOptStat(0);
 import array
 import os
 from itertools import product
+import joblib
 
-# Add morel2suffix
-COLORS = [ROOT.kBlack, ROOT.kBlue+1, ROOT.kGreen+1, ROOT.kRed+1]
-MARKERS = [33, 22, 23, 30]
+# Root colors
+# More info at https://root.cern.ch/doc/master/classTColor.html
+COLORS = [
+    ROOT.kBlack, 
+    ROOT.kBlue+1, 
+    ROOT.kGreen+1, 
+    ROOT.kRed+1,  
+    ROOT.kMagenta+1,
+    ROOT.kYellow+1,
+    ROOT.kCyan+2
+]
+
+# Root markers
+# More info at https://root.cern.ch/doc/master/classTAttMarker.html
+MARKERS = [
+    ROOT.kFullDiamond, 
+    ROOT.kFullTriangleUp, 
+    ROOT.kFullTriangleDown, 
+    ROOT.kOpenStar, 
+    ROOT.kFullCircle, 
+    ROOT.kFullSquare,
+    ROOT.kFullCross
+]
 
 def hist1d( name, values, bins, density=False ):
     counts, dummy = np.histogram(values, bins=bins, density=density )
@@ -90,6 +111,7 @@ def make_pt_plot(dataframe, chain, chain_step, l2suffix, value):
     #m_bins = [15, 20, 30, 40, 50, 1000000]
     m_bins = np.arange(0, 2000*10**3//2, step=50*10**3).tolist()
     et_cut  = int(chain.split('_')[1][1:])
+    offline = chain.split('_')[2]
     if value == 'fr':
         #aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_lhvloose != 1) &\
         aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_et >= (et_cut - 5)*GeV) & (np.abs(dataframe.el_eta) <=2.47)]
@@ -120,6 +142,7 @@ def make_mu_plot(dataframe, chain, chain_step, l2suffix, value):
     #m_bins = [15, 20, 30, 40, 50, 1000000]
     #m_bins = np.arange(0, 2000*10**3, step=50*10**3).tolist()
     et_cut  = int(chain.split('_')[1][1:])
+    offline = chain.split('_')[2]
     if value == 'fr':
         #aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_lhvloose != 1) &\
         aux_df = dataframe.loc[(dataframe.target != 1) & (dataframe.el_et >= (et_cut - 5)*GeV) & (np.abs(dataframe.el_eta) <=2.47)]
@@ -155,7 +178,7 @@ val_label_map = {
     'fr': 'F_{R}'
 }
 
-def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, value):
+def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, value, joblib_dump):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
@@ -186,8 +209,12 @@ def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, v
     add_legend(0.55,0.15, labels)
     rpl.add_text( 0.55, 0.35, '%s_%s_%s_nod0' %(step, chain_name.split('_')[0], chain_name.split('_')[1]), textsize=0.04)
     rpl.fix_yaxis_ranges( ignore_zeros=True, ignore_errors=True , yminf=-0.5, ymaxf=1.1)
-    plot_name = f'{value}_{step}_{chain_name.split("_")[0]}_{chain_name.split("_")[1]}'
+    plot_name = f'{var}_{value}_{step}_{chain_name.split("_")[0]}_{chain_name.split("_")[1]}'
     plotpath = os.path.join(output_dir, plot_name)
     fig.savefig(plotpath + '.pdf')
     fig.savefig(plotpath + '.png')
+    if joblib_dump:
+        joblib.dump(root_plots, plotpath + '.joblib')
+        joblib.dump(labels, plotpath + '_labels.joblib')
+    
     return plot_name, fig, labels
