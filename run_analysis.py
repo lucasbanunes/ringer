@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 from argparse import ArgumentParser
 
 from packages.generators import ring_percentages, RingGenerator
-from packages.plotting import make_plot_fig, var2plot_func, val_label_map
+from packages.plotting import make_plot_fig, var_infos, val_label_map
 from packages.utils import get_logger
 
 drop_cols = drop_columns = [
@@ -87,7 +87,7 @@ steps_choices = ['L2Calo', 'L2', 'EFCalo', 'HLT']
 
 def parse_args():
     chain_choices = list(energy_chains.keys())
-    var_choices = list(var2plot_func.keys())
+    var_choices = list(var_infos.keys())
     val_choices = list(val_label_map.keys())
     parser = ArgumentParser()
     parser.add_argument('--dataset', required=True, help='dataset directory path', dest='datasetpath')

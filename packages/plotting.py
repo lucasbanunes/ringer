@@ -156,13 +156,29 @@ def make_dr_plot(dataframe, chain, chain_step, l2suffix, value):
     
     return h_eff, len(passed)/len(total)
 
-var2plot_func = {
-    'et': make_et_plot,
-    'pt': make_pt_plot,
-    'mu': make_mu_plot,
-    'eta': make_eta_plot,
-    'dr': make_dr_plot
+var_infos = {
+    'et': {
+        'label': 'E_{T} [Gev]',
+        'plot_func': make_et_plot,
+    },
+    'pt': {
+        'label': 'pT [MeV]',
+        'plot_func': make_pt_plot,
+    },
+    'mu': {
+        'label': '< #mu >',
+        'plot_func': make_mu_plot,
+    },
+    'eta': {
+        'label': '#eta',
+        'plot_func': make_eta_plot,
+    },
+    'dr': {
+        'label': '\Delta R',
+        'plot_func': make_dr_plot,
+    },
 }
+
 
 val_label_map = {
     'pd': 'P_{D}',
@@ -174,15 +190,15 @@ def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, v
         os.makedirs(output_dir)
     
     try: 
-        plot_func = var2plot_func[var]
+        var_info = var_infos[var]
     except KeyError:
-        raise ValueError(f'There is no plot funcion for the variable {var}')
+        raise ValueError(f'There is no info for the variable {var}')
     
     trigger = f'{step}_{chain_name}'
     n_strats = len(trigger_strategies)
     root_plots = list()
     for strat in trigger_strategies:
-        root_plots.append(plot_func(data, trigger.format(strategy=strat), step, strat, value))
+        root_plots.append(var_info['plot_func'](data, trigger.format(strategy=strat), step, strat, value))
     root_plots = np.array(root_plots)
 
     labels = list()
@@ -196,13 +212,13 @@ def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, v
     
     colors = COLORS[:n_strats] if colors is None else colors
     markers = MARKERS[:n_strats] if markers is None else markers
+    plot_name = f'{var}_{value}_{step}_{chain_name.split("_")[0]}_{chain_name.split("_")[1]}'
     fig = rpl.create_canvas('my_canvas', canw=1400, canh=1000)
-    fig = rpl.plot_profiles(root_plots[:,0], 'E_{T} [GeV]', colors, markers)
+    fig = rpl.plot_profiles(root_plots[:,0], var_info['label'], colors, markers)
     rpl.format_canvas_axes(YTitleOffset = 0.95)
     add_legend(0.55,0.15, labels)
     rpl.add_text( 0.55, 0.35, '%s_%s_%s_nod0' %(step, chain_name.split('_')[0], chain_name.split('_')[1]), textsize=0.04)
     rpl.fix_yaxis_ranges( ignore_zeros=True, ignore_errors=True , yminf=-0.5, ymaxf=1.1)
-    plot_name = f'{var}_{value}_{step}_{chain_name.split("_")[0]}_{chain_name.split("_")[1]}'
     plotpath = os.path.join(output_dir, plot_name)
     fig.savefig(plotpath + '.pdf')
     fig.savefig(plotpath + '.png')
