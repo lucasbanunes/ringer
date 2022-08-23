@@ -163,3 +163,4 @@ if __name__ == '__main__':
     for key, value in args.items():
         analysis_logger.info(f'{key}: {value}')
     run_analysis(**args)
+    analysis_logger.info('Finished')
