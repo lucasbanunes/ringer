@@ -198,6 +198,10 @@ def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, v
     n_strats = len(trigger_strategies)
     energy = chain_name.split("_")[0]
     criterion = chain_name.split("_")[1]
+    plot_name = f'{var}_{value}_{step}_{energy}_{criterion}'
+    plotpath = os.path.join(output_dir, plot_name)
+    colors = COLORS[:n_strats] if colors is None else colors
+    markers = MARKERS[:n_strats] if markers is None else markers
     
     root_plots = list()
     for strat in trigger_strategies:
@@ -217,18 +221,15 @@ def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, v
         joblib.dump(root_plots, plotpath + '.joblib')
         joblib.dump(labels, plotpath + '_labels.joblib')
     
-    colors = COLORS[:n_strats] if colors is None else colors
-    markers = MARKERS[:n_strats] if markers is None else markers
-    plot_name, fig = root2fig(root_plots, labels, colors, markers, var, value, step, energy, criterion)
+    _, fig = root2fig(root_plots, labels, colors, markers, plot_name)
     
-    plotpath = os.path.join(output_dir, plot_name)
     fig.savefig(plotpath + '.pdf')
     fig.savefig(plotpath + '.png')
     
     return plot_name, fig, labels
 
-def root2fig(root_plots, labels, colors, markers, var, value, step, energy, criterion):
-    plot_name = f'{var}_{value}_{step}_{energy}_{criterion}'
+def root2fig(root_plots, labels, colors, markers, plot_name):
+    var, value, step, energy, criterion = plot_name.split('_')
     fig = rpl.create_canvas(plot_name, canw=1400, canh=1000)
     fig = rpl.plot_profiles(root_plots[:,0], var_infos[var]['label'], colors, markers)
     rpl.format_canvas_axes(YTitleOffset = 0.95)
@@ -247,7 +248,7 @@ def cached_root2fig(root_info_dir, plot_name, colors, markers, save=False):
     colors = COLORS[:n_strats] if colors is None else colors
     markers = MARKERS[:n_strats] if markers is None else markers
 
-    _, fig = root2fig(root_plots, labels, colors, markers, var, value, step, energy, criterion)
+    _, fig = root2fig(root_plots, labels, colors, markers, plot_name)
 
     if save:
         plotpath = os.path.join(root_info_dir, plot_name)
