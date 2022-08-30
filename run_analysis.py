@@ -21,72 +21,11 @@ from argparse import ArgumentParser
 from packages.generators import ring_percentages, RingGenerator
 from packages.plotting import make_plot_fig, var_infos, val_label_map
 from packages.utils import get_logger
+from packages.constants import DROP_COLS, L1SEEDS_PER_ENERGY, CRITERIA_CONF_NAMES, ENERGY_CHAINS, TRIG_STEPS
 
-drop_cols = drop_columns = [
-                    'RunNumber', 
-                    'trig_L2_cl_e2tsts1',
-                    'trig_L2_el_hastrack',
-                    'trig_L2_el_eta',
-                    'trig_L2_el_phi',
-                    'trig_L2_el_caloEta',
-                    'trig_L2_el_trkClusDeta',
-                    'trig_L2_el_trkClusDphi',
-                    'trig_L2_el_etOverPt',
-                    'trig_EF_cl_hascluster',
-                    'trig_EF_cl_eta',
-                    'trig_EF_cl_etaBE2',
-                    'trig_EF_cl_phi',     
-                    'trig_EF_el_hascand',
-                    'trig_EF_el_eta',
-                    'trig_EF_el_etaBE2',
-                    'trig_EF_el_phi',
-                    'trig_EF_el_rhad1',
-                    'trig_EF_el_rhad',
-                    'trig_EF_el_f3',
-                    'trig_EF_el_weta2',
-                    'trig_EF_el_rphi',
-                    'trig_EF_el_reta',
-                    'trig_EF_el_wtots1',
-                    'trig_EF_el_eratio',
-                    'trig_EF_el_f1',
-                    'trig_EF_el_hastrack',
-                    'trig_EF_el_deltaEta1',
-                    'trig_EF_el_deltaPhi2',
-                    'trig_EF_el_deltaPhi2Rescaled',
-                    'el_etaBE2',
-                    'el_numberOfBLayerHits',
-                    'el_numberOfPixelHits',
-                    'el_numberOfTRTHits',
-                    'el_trans_TRT_PID',
-                    'el_deltaPhi2',
-                    'el_TaP_Mass',
-                ]
-
-l1seeds_per_energy = {
-    24: 'L1_EM22VHI',
-    26: 'L1_EM22VHI',
-    60: 'L1_EM24VHI',
-    140: 'L1_EM24VHI'
-}
-
-criteria_conf_names = {
-    'tight': 'ElectronRingerTightTriggerConfig.conf',
-    'medium': 'ElectronRingerMediumTriggerConfig.conf',
-    'loose': 'ElectronRingerLooseTriggerConfig.conf',
-    'vloose': 'ElectronRingerVeryLooseTriggerConfig.conf'
-}
-
-energy_chains = {
-     24: 'e24_lhtight_nod0_{strategy}_ivarloose',
-     26: 'e26_lhtight_nod0_{strategy}_ivarloose',
-     60: 'e60_lhmedium_nod0_{strategy}_L1EM24VHI',
-     140: 'e140_lhloose_nod0_{strategy}'
-}
-
-steps_choices = ['L2Calo', 'L2', 'EFCalo', 'HLT']
 
 def parse_args():
-    chain_choices = list(energy_chains.keys())
+    chain_choices = list(ENERGY_CHAINS.keys())
     var_choices = list(var_infos.keys())
     val_choices = list(val_label_map.keys())
     parser = ArgumentParser()
@@ -97,63 +36,45 @@ def parse_args():
     parser.add_argument('--vars', nargs='+', choices=var_choices, default=var_choices, help='x axis variables for the plots', dest='plot_vars')
     parser.add_argument('--values', nargs='+', choices=val_choices, default=val_choices, help='which values will be plotted')
     parser.add_argument('--chains', nargs='+', default=chain_choices, choices=chain_choices, help='chains to be plotted, defults to all chains', type=int, dest='chain_names')
-    parser.add_argument('--steps', nargs='+', default=steps_choices, choices=steps_choices, help='trigger steps to be plotted defaults to all steps', dest='trigger_steps')
+    parser.add_argument('--steps', nargs='+', default=TRIG_STEPS, choices=TRIG_STEPS, help='trigger steps to be plotted defaults to all steps', dest='trigger_steps')
     parser.add_argument('--dev', action='store_true', help='if passed, runs the code only with the leblon region')
     parser.add_argument('--log', action='store_true', help='if passed, creates a log file with script activity')
     parser.add_argument('--markers', nargs='+', help='marker codes for each model passed', default=None, type=int)
     parser.add_argument('--colors', nargs='+', help='color codes for each model passed', default=None, type=int)
     args = parser.parse_args().__dict__
-    args['chain_names'] = [energy_chains[energy] for energy in args['chain_names']]
+    args['chain_names'] = [ENERGY_CHAINS[energy] for energy in args['chain_names']]
     return args
 
 def run_analysis(datasetpath: str, modelpaths: List[str], output_dir: str, cutbased: bool, 
          plot_vars: List[str], values: List[str], chain_names: List[str], trigger_steps: List[str], 
          dev: bool, markers: List[int], colors: List[int], **kwargs):
 
-    analysis_logger.info('Building decorators')
-    decorators = list()
+    analysis_logger.info('Loading chains')
     trigger_strategies = ['noringer'] if cutbased else list()
-    for modelpath, criterion in product(modelpaths, criteria_conf_names.keys()):
-        conf_name = criteria_conf_names[criterion]
-        confpath = os.path.join(modelpath, conf_name)
+    aux_conf_name = CRITERIA_CONF_NAMES['tight']
+    for modelpath in modelpaths:
+        confpath = os.path.join(modelpath, aux_conf_name)
         env = ROOT.TEnv(confpath)
         ringer_version = env.GetValue("__version__", '')
         ringer_name = f'ringer_{ringer_version}'
-        analysis_logger.info(f'Building decorator for {confpath}. Version: {ringer_version}')
-        decorator = RingerDecorator(f'{ringer_name}_{criterion}', confpath, RingGenerator(ring_percentages[ringer_version]))
-        decorators.append(decorator)
-        if not ringer_name in trigger_strategies:
-            trigger_strategies.append(ringer_name)
+        trigger_strategies.append(ringer_name)
     
-    analysis_logger.info('Building chains')
-    chains = list()
-    step_chain_names = list()
-    for chain_name, strategy in product(chain_names, trigger_strategies):
-        spliited_chain_name = chain_name.split('_')
-        criterion = spliited_chain_name[1].replace('lh', '')
-        step_chain_name = f'HLT_{chain_name.format(strategy=strategy)}'
-        step_chain_names.append(step_chain_name)
-        energy = int(spliited_chain_name[0][1:])
-        l1seed = l1seeds_per_energy[energy]
-        l2calo_column = f'{strategy}_{criterion}'
-        analysis_logger.info(f'Building chain: {step_chain_name} model: {l2calo_column}')
-        if strategy == 'noringer':
-            chain = Chain(step_chain_name, L1Seed=l1seed)
-        else:
-            chain = Chain(step_chain_name, L1Seed=l1seed, l2calo_column=l2calo_column)
-        chains.append(chain)
-
-    analysis_logger.info('Loading the data')
-    filename_end = '*et4_eta4.npz' if dev else '*.npz'    #If dev, loads leblon
-    datafiles = glob.glob(os.path.join(datasetpath, filename_end))  
-    analysis_logger.info(f'glob_path: {os.path.join(datasetpath, filename_end)}')
-    data = load_in_loop(datafiles, drop_columns=drop_cols, decorators=decorators, chains=chains)
+    strat_chains = dict()
+    for trig_strat in trigger_strategies:
+        parquet_file = trig_strat + '.parquet'
+        chainpath = os.path.join(datasetpath, 'simulated_chains', parquet_file)
+        if dev:
+            chainpath = os.path.join(chainpath, f'{trig_strat}_et4_eta4.parquet')
+        analysis_logger.info(f'Loading: {chainpath}')
+        strat_chains[trig_strat] = pd.read_parquet(chainpath)
 
     analysis_logger.info('Making plots')
     for value, var, chain_name, step in product(values, plot_vars, chain_names, trigger_steps):
         plot_dir = os.path.join(output_dir, value, var)
         analysis_logger.info(f'Plotting value: {value}, step: {step}, chain_name: {chain_name}, var: {var}')
-        make_plot_fig(data, step, chain_name, trigger_strategies, plot_dir , var, value, markers=markers, colors=colors, joblib_dump=True)
+        make_plot_fig(strat_chains, step, chain_name, trigger_strategies, 
+                    plot_dir , var, value, joblib_dump=True,
+                    markers=None, colors=None)
 
 if __name__ == '__main__':
     args = parse_args()

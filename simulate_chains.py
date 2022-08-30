@@ -166,7 +166,6 @@ def simulate(datasetpath: str, modelpaths: List[str], cutbased: bool,
     save_cols += ['target']
     last_strat = None
     for strategy, et_bin_idx, eta_bin_idx in product(strategy_cols.keys(), et_bins_idxs, eta_bins_idxs):
-        strategy = 'cutbased' if strategy == 'noringer' else strategy
         outname = f'{strategy}_et{et_bin_idx}_eta{eta_bin_idx}'
         simulation_logger.info(f'Generating {outname}')
         strategy_out = os.path.join(output_dir, strategy + '.parquet')

@@ -185,7 +185,7 @@ val_label_map = {
     'fr': 'F_{R}'
 }
 
-def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, value, joblib_dump, markers, colors):
+def make_plot_fig(strat_chains, step, chain_name, trigger_strategies, output_dir, var, value, joblib_dump, markers, colors):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
@@ -205,7 +205,7 @@ def make_plot_fig(data, step, chain_name, trigger_strategies, output_dir, var, v
     
     root_plots = list()
     for strat in trigger_strategies:
-        root_plots.append(var_info['plot_func'](data, trigger.format(strategy=strat), step, strat, value))
+        root_plots.append(var_info['plot_func'](strat_chains[strat], trigger.format(strategy=strat), step, strat, value))
     root_plots = np.array(root_plots)
 
     labels = list()
