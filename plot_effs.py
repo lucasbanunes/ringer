@@ -45,7 +45,7 @@ def parse_args():
     args['chain_names'] = [ENERGY_CHAINS[energy] for energy in args['chain_names']]
     return args
 
-def run_analysis(datasetpath: str, modelpaths: List[str], output_dir: str, cutbased: bool, 
+def plot_effs(datasetpath: str, modelpaths: List[str], output_dir: str, cutbased: bool, 
          plot_vars: List[str], values: List[str], chain_names: List[str], trigger_steps: List[str], 
          dev: bool, markers: List[int], colors: List[int], **kwargs):
 
@@ -78,10 +78,10 @@ def run_analysis(datasetpath: str, modelpaths: List[str], output_dir: str, cutba
 
 if __name__ == '__main__':
     args = parse_args()
-    analysis_logger = get_logger('run_analysis', file=args['log'])
+    analysis_logger = get_logger('plot_effs', file=args['log'])
     analysis_logger.info('Script start')
     analysis_logger.info('Parsed args')
     for key, value in args.items():
         analysis_logger.info(f'{key}: {value}')
-    run_analysis(**args)
+    plot_effs(**args)
     analysis_logger.info('Finished')
