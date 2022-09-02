@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 from argparse import ArgumentParser
 
 from packages.generators import ring_percentages, RingGenerator
-from packages.plotting import make_plot_fig, var_infos, val_label_map
+from packages.plotting import make_plot_fig, var_infos, val_label_map, COLORS, MARKERS
 from packages.utils import get_logger
 from packages.constants import DROP_COLS, L1SEEDS_PER_ENERGY, CRITERIA_CONF_NAMES, ENERGY_CHAINS, TRIG_STEPS
 
@@ -68,13 +68,16 @@ def plot_effs(datasetpath: str, modelpaths: List[str], output_dir: str, cutbased
         analysis_logger.info(f'Loading: {chainpath}')
         strat_chains[trig_strat] = pd.read_parquet(chainpath)
 
+    n_strats = len(trigger_strategies)
+    colors = COLORS[:n_strats] if colors is None else colors
+    markers = MARKERS[:n_strats] if markers is None else markers
     analysis_logger.info('Making plots')
     for value, var, chain_name, step in product(values, plot_vars, chain_names, trigger_steps):
         plot_dir = os.path.join(output_dir, value, var)
         analysis_logger.info(f'Plotting value: {value}, step: {step}, chain_name: {chain_name}, var: {var}')
         make_plot_fig(strat_chains, step, chain_name, trigger_strategies, 
                     plot_dir , var, value, joblib_dump=True,
-                    markers=None, colors=None)
+                    markers=markers, colors=colors)
 
 if __name__ == '__main__':
     args = parse_args()

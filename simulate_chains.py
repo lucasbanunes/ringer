@@ -162,7 +162,7 @@ def simulate(datasetpath: str, modelpaths: List[str], cutbased: bool,
     simulation_logger.info('Saving_data')
     output_dir = os.path.join(datasetpath, 'simulated_chains')
     save_cols = [f'el_lh{criterion}' for criterion in criteria_conf_names.keys()]
-    save_cols += ['trig_L2_el_pt', 'avgmu', 'el_et', 'el_eta', 'el_TaP_deltaR']
+    save_cols += ['trig_L2_el_pt', 'avgmu', 'el_et', 'el_eta', 'el_TaP_deltaR', 'trig_L2_cl_et', 'trig_L2_cl_eta']
     save_cols += ['target']
     last_strat = None
     for strategy, et_bin_idx, eta_bin_idx in product(strategy_cols.keys(), et_bins_idxs, eta_bins_idxs):

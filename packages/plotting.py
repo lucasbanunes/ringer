@@ -1,6 +1,8 @@
 from Gaugi.constants import GeV, MeV
 import rootplotlib as rpl
 
+import seaborn as sns
+import matplotlib.pyplot as plt
 import numpy as np
 import root_numpy
 import ROOT
@@ -9,6 +11,7 @@ import array
 import os
 from itertools import product
 import joblib
+import packages.utils as utils
 
 # Root colors
 # More info at https://root.cern.ch/doc/master/classTColor.html
@@ -92,7 +95,7 @@ def make_eta_plot(dataframe, chain, chain_step, l2suffix, value):
 
 def make_pt_plot(dataframe, chain, chain_step, l2suffix, value):
 
-    m_bins = np.arange(0, 2000*10**3//2, step=50*10**3).tolist()
+    m_bins = np.arange(0, 2000//2, step=50).tolist()
     et_cut  = int(chain.split('_')[1][1:])
     offline = chain.split('_')[2]
     if value == 'fr':
@@ -106,8 +109,8 @@ def make_pt_plot(dataframe, chain, chain_step, l2suffix, value):
     total   = aux_df
     passed  = aux_df.loc[(aux_df[step_decision] == 1)]
     
-    h_num = hist1d('pt_num', passed['trig_L2_el_pt']/MeV, m_bins )
-    h_den = hist1d('pt_den', total['trig_L2_el_pt']/MeV, m_bins )
+    h_num = hist1d('pt_num', passed['trig_L2_el_pt']/GeV, m_bins )
+    h_den = hist1d('pt_den', total['trig_L2_el_pt']/GeV, m_bins )
     h_eff = rpl.hist1d.divide(h_num,h_den) 
     
     return h_eff, len(passed)/len(total)
@@ -156,26 +159,70 @@ def make_dr_plot(dataframe, chain, chain_step, l2suffix, value):
     
     return h_eff, len(passed)/len(total)
 
+def joint_plot(data, x, y, et_cut=None, ylim=None,
+                xlim=None, xlabel=None, ylabel=None, data_label=None, criterion=None,
+                title=None, cmap=None, marg_color=None, figsize=None):
+    if (data_label is not None) and (data_label != 'all') and (criterion is not None):
+        data_labeling_func = utils.LABEL_UTILITIES[data_label]
+        data = data[data_labeling_func(data, f'el_lh{criterion}')]
+    if et_cut is not None:
+        data = data[data[var_infos['et']['l2_calo_col']] < et_cut]
+    jplot = sns.jointplot(data=data, x=x, y=y, kind='hist', 
+                  marginal_kws=dict(thresh=0, color=marg_color),
+                  marginal_ticks=True, xlim=xlim, ylim=ylim,
+                  joint_kws=dict(thresh=0, cmap=cmap, cbar=True, cbar_kws=dict(orientation="vertical")))
+    
+    plt.subplots_adjust(left=0.1, right=0.8, top=0.9, bottom=0.1)
+    # get the current positions of the joint ax and the ax for the marginal x
+    pos_joint_ax = jplot.ax_joint.get_position()
+    pos_marg_x_ax = jplot.ax_marg_x.get_position()
+    pos_marg_y_ax = jplot.ax_marg_y.get_position()
+    # reposition the joint ax so it has the same width as the marginal x ax
+    jplot.ax_joint.set_position([pos_joint_ax.x0, pos_joint_ax.y0, pos_marg_x_ax.width, pos_joint_ax.height])
+    # reposition the colorbar using new x positions and y positions of the joint ax
+    
+    if xlabel is not None:
+        jplot.ax_joint.set_xlabel(xlabel, fontsize='small')
+    if ylabel is not None:
+        jplot.ax_joint.set_ylabel(ylabel, fontsize='small')
+    
+    jplot.figure.axes[-1].set_position([.83, pos_joint_ax.y0, .07, pos_joint_ax.height])
+    jplot.figure.patch.set_facecolor('white')
+    jplot.figure.suptitle(title, fontsize='medium')
+    if figsize is not None:
+        jplot.figure.set_figwidth(figsize[0])
+        jplot.figure.set_figheight(figsize[1])
+    jplot.figure.text(0.7, 0.9, f'Samples:\n{len(data)}', fontsize='small',
+                        verticalalignment='top', wrap=True)
+    jplot.figure.tight_layout()
+    return jplot
+
 var_infos = {
     'et': {
         'label': 'E_{T} [GeV]',
         'plot_func': make_et_plot,
+        'col': 'el_et',
+        'l2_calo_col': 'trig_L2_cl_et'
     },
     'pt': {
-        'label': 'pT [MeV]',
+        'label': 'pT [GeV]',
         'plot_func': make_pt_plot,
+        'col': 'trig_L2_el_pt'
     },
     'mu': {
         'label': '< #mu >',
         'plot_func': make_mu_plot,
+        'col': 'avgmu'
     },
     'eta': {
         'label': '#eta',
         'plot_func': make_eta_plot,
+        'col': 'el_eta'
     },
     'dr': {
         'label': '\Delta R',
         'plot_func': make_dr_plot,
+        'col': 'el_TaP_deltaR'
     },
 }
 
