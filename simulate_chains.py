@@ -92,16 +92,20 @@ def simulate(datasetpath: str, modelpaths: List[str], cutbased: bool,
         chains.append(chain)
 
     filename_end = '_et{et}_eta{eta}.parquet'
+    dataset_dir, datasetname = os.path.split(datasetpath)
+    dataset_name = datasetname.replace('.parquet', '')
     simulation_logger.info('Reading schema')
-    with open(os.path.join(datasetpath, 'schema.json'), 'r') as json_file:
+    with open(os.path.join(dataset_dir, dataset_name + '_schema.json'), 'r') as json_file:
         data_cols = list(json.load(json_file).keys())
     load_cols = [col for col in data_cols if col not in DROP_COLS]
-    output_dir = os.path.join(datasetpath, 'simulated_chains')
+    output_dir = os.path.join(dataset_dir, 'sim_chains_' + dataset_name)
     last_strat = None
-    #If dev, load only a part of the dataset
+    # If dev, load only a part of the dataset for last_bin understanding see the if clause 
+    # that uses it bellow
     ibins = product([4], [4]) if dev else product(et_bins_idxs, eta_bins_idxs)
-    for et_bin_idx, eta_bin_idx in ibins:
-        
+    last_bin = 0 if dev else len(et_bins_idxs)*len(eta_bins_idxs) - 1
+    for i, bins in enumerate(ibins):
+        et_bin_idx, eta_bin_idx = bins
         start_msg = f'et {et_bin_idx} eta {eta_bin_idx} '
         _, datasetname = os.path.split(datasetpath)
         filepath = os.path.join(datasetpath, datasetname + filename_end.format(et=et_bin_idx, eta=eta_bin_idx))
@@ -121,16 +125,16 @@ def simulate(datasetpath: str, modelpaths: List[str], cutbased: bool,
                 os.makedirs(strategy_out)
 
             selection_cols = strategy_cols[strategy] + ['id']   # Saves the id for future joining if necessary
-            if last_strat != strategy:
-                with open(os.path.join(output_dir, f'{strategy}_cols.json'), 'w') as json_file:
-                    json.dump(selection_cols, json_file, indent=4)
-                last_strat = deepcopy(strategy)
-
             et_min, et_max = et_bins[et_bin_idx:et_bin_idx+2]
             eta_min, eta_max = eta_bins[eta_bin_idx:eta_bin_idx+2]
             bin_selector = (data['el_et'] >= (et_min*GeV)) & (data['el_et'] < (et_max*GeV))
             bin_selector = bin_selector & (data['el_eta'].abs() >= eta_min) & (data['el_eta'].abs() < eta_max)
             selected_data = data.loc[bin_selector, selection_cols]
+            # This ensures that the schema is saved only at the end
+            if last_strat != strategy and i == last_bin:
+                with open(os.path.join(output_dir, f'{strategy}_schema.json'), 'w') as json_file:
+                    json.dump(selected_data.dtypes.astype(str).to_dict(), json_file, indent=4)
+                last_strat = deepcopy(strategy)
 
             simulation_logger.info(start_msg + f'saving: {outname}')
             selected_data.to_parquet(os.path.join(strategy_out, outname + '.parquet'))
