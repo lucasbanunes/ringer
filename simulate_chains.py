@@ -125,11 +125,7 @@ def simulate(datasetpath: str, modelpaths: List[str], cutbased: bool,
                 os.makedirs(strategy_out)
 
             selection_cols = strategy_cols[strategy] + ['id']   # Saves the id for future joining if necessary
-            et_min, et_max = et_bins[et_bin_idx:et_bin_idx+2]
-            eta_min, eta_max = eta_bins[eta_bin_idx:eta_bin_idx+2]
-            bin_selector = (data['el_et'] >= (et_min*GeV)) & (data['el_et'] < (et_max*GeV))
-            bin_selector = bin_selector & (data['el_eta'].abs() >= eta_min) & (data['el_eta'].abs() < eta_max)
-            selected_data = data.loc[bin_selector, selection_cols]
+            selected_data = data[selection_cols]
             # This ensures that the schema is saved only at the end
             if last_strat != strategy and i == last_bin:
                 with open(os.path.join(output_dir, f'{strategy}_schema.json'), 'w') as json_file:
