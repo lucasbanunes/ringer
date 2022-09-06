@@ -63,15 +63,27 @@ def plot_vars_distributions(datasetpath: str, modelpaths: List[str], output_dir:
         ringer_name = f'ringer_{ringer_version}'
         trigger_strategies.append(ringer_name)
     
+    plot_logger.info('Loading datasets')
+    dataset_dir, dataset_name = os.path.split(datasetpath)
+    dataset_name = dataset_name.replace('.parquet', '')
+    load_cols = ['id', 'target'] + [f'el_lh{criterion}' for criterion in CRITERIA_CONF_NAMES.keys()]
+    for var in plot_vars:
+        load_cols.append(var_infos[var]['col'])
+        try:
+            load_cols.append(var_infos[var]['l2_calo_col'])
+        except KeyError:
+            pass
+    dataset = pd.read_parquet(datasetpath, columns=load_cols)
+    
     for trig_strat in trigger_strategies:
         parquet_file = trig_strat + '.parquet'
-        chainpath = os.path.join(datasetpath, 'simulated_chains', parquet_file)
+        chainpath = os.path.join(dataset_dir, 'sim_chains_'+dataset_name, parquet_file)
         if dev:
             chainpath = os.path.join(chainpath, f'{trig_strat}_et4_eta4.parquet')
         plot_logger.info(f'Loading: {parquet_file}')
-        data = pd.read_parquet(chainpath)
 
         # Casting variables to GeV (They come in MeV)
+        data = dataset.join(pd.read_parquet(chainpath), on='id', how='outer', rsuffix=f'_{trig_strat}')
         data[var_infos['pt']['col']] = data[var_infos['pt']['col']]/GeV
         data[var_infos['et']['col']] = data[var_infos['et']['col']]/GeV
         data[var_infos['et']['l2_calo_col']] = data[var_infos['et']['l2_calo_col']]/GeV
@@ -79,7 +91,7 @@ def plot_vars_distributions(datasetpath: str, modelpaths: List[str], output_dir:
         for var, data_label, criterion, et_cut in product(plot_vars, data_labels, criteria, et_cuts):
             plot_logger.info(f'Plotting {data_label} {criterion} var {var} for {trig_strat} with et_cut {et_cut}')
             strat_name = trig_strat.capitalize().replace('_', ' ')
-            text_label = var_infos[var]["label"].replace('#', '\\')
+            text_label = var_infos[var]["label"].replace('#', '\\').replace('MeV', 'GeV')
             
             if data_label == 'electron':
                 title = fr'{strat_name} Output x ${text_label}$ el_lh{criterion} approved'

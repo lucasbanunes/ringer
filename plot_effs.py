@@ -60,7 +60,13 @@ def plot_effs(datasetpath: str, modelpaths: List[str], output_dir: str, cutbased
     analysis_logger.info('Loading chains')
     dataset_dir, dataset_name = os.path.split(datasetpath)
     dataset_name = dataset_name.replace('.parquet', '')
-    load_cols = [var_infos[var]['col'] for var in plot_vars]
+    load_cols = ['id', 'target'] + [f'el_lh{criterion}' for criterion in CRITERIA_CONF_NAMES.keys()]
+    for var in plot_vars:
+        load_cols.append(var_infos[var]['col'])
+        try:
+            load_cols.append(var_infos[var]['l2_calo_col'])
+        except KeyError:
+            pass
     plot_data = pd.read_parquet(datasetpath, columns=load_cols)
     for trig_strat in trigger_strategies:
         parquet_file = trig_strat + '.parquet'
