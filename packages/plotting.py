@@ -205,7 +205,7 @@ var_infos = {
         'l2_calo_col': 'trig_L2_cl_et'
     },
     'pt': {
-        'label': 'pT [MeV]',
+        'label': 'pT [GeV]',
         'plot_func': make_pt_plot,
         'col': 'trig_L2_el_pt'
     },

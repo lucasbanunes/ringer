@@ -28,12 +28,12 @@ from packages.utils import get_logger
 from packages.constants import DROP_COLS, L1SEEDS_PER_ENERGY, CRITERIA_CONF_NAMES, ENERGY_CHAINS, TRIG_STEPS
 
 et_bins = [15, 20, 30, 40, 50, 1000000]
-et_bins_idxs = range(len(et_bins)-1)
 eta_bins = [0.0, 0.8, 1.37, 1.54, 2.37, 2.50]
-eta_bins_idxs = range(len(eta_bins)-1)
 
 def parse_args():
     chain_choices = list(ENERGY_CHAINS.keys())
+    et_choices = list(range(len(et_bins)-1))
+    eta_choices = list(range(len(eta_bins)-1))
     parser = ArgumentParser()
     parser.add_argument('--dataset', required=True, help='dataset directory path', dest='datasetpath')
     parser.add_argument('--models', nargs='+', required=True, help='models directory path, can be more than one', dest='modelpaths')
@@ -41,12 +41,16 @@ def parse_args():
     parser.add_argument('--chains', nargs='+', default=chain_choices, choices=chain_choices, help='chains to be plotted, defults to all chains', type=int, dest='chain_names')
     parser.add_argument('--dev', action='store_true', help='if passed, runs the code only with the leblon region')
     parser.add_argument('--log', action='store_true', help='if passed, creates a log file with script activity')
+    parser.add_argument('--ets', nargs='+', choices=et_choices, default=et_choices, type=int,
+        help='et regions to simulate')
+    parser.add_argument('--etas', nargs='+', choices=eta_choices, default=eta_choices, type=int,
+        help='eta regions to simulate')
     args = parser.parse_args().__dict__
     args['chain_names'] = [ENERGY_CHAINS[energy] for energy in args['chain_names']]
     return args
 
 def simulate(datasetpath: str, modelpaths: List[str], cutbased: bool, 
-        chain_names: List[str], dev: bool, **kwargs):
+        chain_names: List[str], dev: bool, ets: List[int], etas: List[int], **kwargs):
 
     simulation_logger.info('Building decorators')
     decorators = list()
@@ -57,6 +61,8 @@ def simulate(datasetpath: str, modelpaths: List[str], cutbased: bool,
         confpath = os.path.join(modelpath, conf_name)
         env = ROOT.TEnv(confpath)
         ringer_version = env.GetValue("__version__", '')
+        if ringer_version == 'should_be_filled':
+            raise ValueError(f'The model from {modelpath} does not have a version. Please fill it. Version found: {ringer_version}')
         ringer_name = f'ringer_{ringer_version}'
         strat_criterion = f'{ringer_name}_{criterion}'
         simulation_logger.info(f'Building decorator for {confpath}. Version: {ringer_version}')
@@ -102,8 +108,8 @@ def simulate(datasetpath: str, modelpaths: List[str], cutbased: bool,
     last_strat = None
     # If dev, load only a part of the dataset for last_bin understanding see the if clause 
     # that uses it bellow
-    ibins = product([4], [4]) if dev else product(et_bins_idxs, eta_bins_idxs)
-    last_bin = 0 if dev else len(et_bins_idxs)*len(eta_bins_idxs) - 1
+    ibins = product([4], [4]) if dev else product(ets, etas)
+    last_bin = 0 if dev else len(ets)*len(etas) - 1
     for i, bins in enumerate(ibins):
         et_bin_idx, eta_bin_idx = bins
         start_msg = f'et {et_bin_idx} eta {eta_bin_idx} '
