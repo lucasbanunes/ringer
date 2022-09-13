@@ -47,5 +47,6 @@ class RingGenerator(object):
 default_percentage = lambda : 1.
 ring_percentages = defaultdict(default_percentage)
 ring_percentages['v12'] = 0.5
+ring_percentages['v12.1'] = 0.5
 ring_percentages['v18'] = 0.75
 ring_percentages['v19'] = 0.25
