@@ -1,4 +1,5 @@
 import os
+import numpy as np
 DROP_COLS = [
     'RunNumber', 
     'trig_L2_cl_e2tsts1',
@@ -62,3 +63,7 @@ ENERGY_CHAINS = {
 
 TRIG_STEPS = ['L2Calo', 'L2', 'EFCalo', 'HLT']
 HOME_PATH = os.path.expanduser('~')
+
+STEP_PREFIX = {
+    'L2Calo': 'trig_L2_cl_'
+}
