@@ -70,7 +70,7 @@ def make_et_plot(dataframe, chain, chain_step, l2suffix, value):
     return h_eff, len(passed)/len(total)
 
 def make_eta_plot(dataframe, chain, chain_step, l2suffix, value):
-
+    from Gaugi.constants import GeV
     m_bins = [-2.47,-2.37,-2.01,-1.81,-1.52,-1.37,-1.15,-0.80,-0.60,-0.10,0.00,
               0.10, 0.60, 0.80, 1.15, 1.37, 1.52, 1.81, 2.01, 2.37, 2.47]
     
