@@ -1,5 +1,11 @@
 import os
 import numpy as np
+
+VAR_INFOS_DTYPES = dict(
+    name='str', label='str', tyoe='category', lower_lim='float', upper_lim='float', 
+    l2calo='str', offline='str', TaP='str', description='str'
+)
+
 DROP_COLS = [
     'RunNumber', 
     'trig_L2_cl_e2tsts1',
