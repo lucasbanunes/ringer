@@ -73,3 +73,42 @@ HOME_PATH = os.path.expanduser('~')
 STEP_PREFIX = {
     'L2Calo': 'trig_L2_cl_'
 }
+
+LOGGING_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'streamFormat': {
+            'format': '%(asctime)s - %(process)d - %(levelname)s - %(module)s - %(funcName)s - %(message)s'
+        },
+        'csvformat': {
+            'format': '%(asctime)s;%(process)d;%(levelname)s;%(module)s;%(funcName)s;%(message)s'
+        }
+    },
+    'handlers': {
+        'stream': {
+            'class': 'logging.StreamHandler',
+            'level': 'DEBUG',
+            'formatter': 'csvFormat',
+        },
+        'csv': {
+            'class': 'logging.FileHandler',
+            'level': 'DEBUG',
+            'formatter': 'csvFormat',
+            'mode': 'w',
+            'filename': 'ringer_csv_filename.csv'
+        }
+    },
+    'loggers': {
+        'ringer_debug': {
+            'level': 'DEBUG',
+            'handlers': ['stream'],
+            'propagate': True
+        },
+        'ringer_debug_with_csv': {
+            'level': 'DEBUG',
+            'handlers': ['stream', 'csv'],
+            'propagate': True
+        },
+    }
+}
