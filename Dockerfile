@@ -1,10 +1,10 @@
 FROM nvcr.io/nvidia/tensorflow:22.07-tf2-py3
 
-# Exposing a port in case of necessity
+# Exposing jupyter port
 EXPOSE 8888
 
 #Installing extra dependencies
-COPY setup.sh .
 COPY requirements.txt .
-RUN bash ./setup.sh
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 CMD jupyter lab --port 8888 --no-browser
