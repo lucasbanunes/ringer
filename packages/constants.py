@@ -89,14 +89,7 @@ LOGGING_CONFIG = {
         'stream': {
             'class': 'logging.StreamHandler',
             'level': 'DEBUG',
-            'formatter': 'csvFormat',
-        },
-        'csv': {
-            'class': 'logging.FileHandler',
-            'level': 'DEBUG',
-            'formatter': 'csvFormat',
-            'mode': 'w',
-            'filename': 'ringer_csv_filename.csv'
+            'formatter': 'streamFormat',
         }
     },
     'loggers': {
@@ -104,11 +97,18 @@ LOGGING_CONFIG = {
             'level': 'DEBUG',
             'handlers': ['stream'],
             'propagate': True
-        },
-        'ringer_debug_with_csv': {
-            'level': 'DEBUG',
-            'handlers': ['stream', 'csv'],
-            'propagate': True
-        },
+        }
     }
 }
+
+NAMED_ET_ETA_BINS = {
+    'L2Calo_2017': {
+        'et_bins': [15,20,30,40,50,np.inf], 
+        'eta_bins': [0,0.8,1.37,1.54,2.37,2.5],
+        'inclusive': 'left',
+        'et_key': 'L2Calo_et',
+        'eta_key': 'L2Calo_eta'
+    }
+}
+
+RANDOM_STATE = 512
