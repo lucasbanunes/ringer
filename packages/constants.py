@@ -105,9 +105,18 @@ NAMED_ET_ETA_BINS = {
     'L2Calo_2017': {
         'et_bins': [15,20,30,40,50,np.inf], 
         'eta_bins': [0,0.8,1.37,1.54,2.37,2.5],
-        'inclusive': 'left',
-        'et_key': 'L2Calo_et',
-        'eta_key': 'L2Calo_eta'
+        'et_inclusives': ['left','left','left','left','both'],
+        'eta_inclusives': ['left','left','left','left','both'],
+        'et_key': 'trig_L2_cl_et',
+        'eta_key': 'trig_L2_cl_eta'
+    },
+    'L2Calo_2017_alt': {
+    'et_bins': [15,20,30,40,50,np.inf], 
+    'eta_bins': [0,0.8,1.37,1.54,2.37,2.5],
+    'et_inclusives': ['left','left','left','left','both'],
+    'eta_inclusives': ['left','left','left','left','both'],
+    'et_key': 'L2Calo_et',
+    'eta_key': 'L2Calo_eta'
     }
 }
 

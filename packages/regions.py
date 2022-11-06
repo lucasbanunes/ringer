@@ -5,26 +5,28 @@ from .constants import NAMED_ET_ETA_BINS
 class EtEtaRegion(object):
 
     def __init__(self, et_range, eta_range, et_idx, eta_idx, 
-        inclusive, et_key, eta_key):
+        et_inclusive, eta_inclusive, et_key, eta_key):
         self.et_range = et_range
         self.eta_range = eta_range
         self.et_idx = et_idx
         self.eta_idx = eta_idx
-        self.inclusive = inclusive
+        self.et_inclusive = et_inclusive
+        self.eta_inclusive = eta_inclusive
         self.et_key = et_key
         self.eta_key = eta_key
     
     def __repr__(self):
-        rep = f'EtEtaRegion(et_range={self.et_range}, eta_range={self.eta_range})'
+        rep = f'EtEtaRegion(et_range={self.et_range}, eta_range={self.eta_range}'
+        rep += f', et_inclusive={self.et_inclusive}, eta_inclusive={self.eta_inclusive})'
         return rep
     
     def get_filter(self, data: pd.DataFrame):
-        et_filter = data[self.et_key].between(*self.et_range, inclusive=self.inclusive)
-        eta_filter = data[self.eta_key].between(*self.eta_range, inclusive=self.inclusive)
+        et_filter = data[self.et_key].between(*self.et_range, inclusive=self.et_inclusive)
+        eta_filter = data[self.eta_key].abs().between(*self.eta_range, inclusive=self.eta_inclusive)
         region_filter = et_filter & eta_filter
         return region_filter
 
-def get_et_eta_regions(et_bins, eta_bins, inclusive, et_key, eta_key):
+def get_et_eta_regions(et_bins, eta_bins, et_inclusives, eta_inclusives, et_key, eta_key):
     et_eta_regions = list()
     n_et_bins = len(et_bins)-1
     n_eta_bins = len(eta_bins)-1
@@ -36,7 +38,8 @@ def get_et_eta_regions(et_bins, eta_bins, inclusive, et_key, eta_key):
             eta_range = eta_bins[eta_idx: eta_idx+2],
             et_idx = et_idx,
             eta_idx = eta_idx,
-            inclusive = inclusive, 
+            et_inclusive = et_inclusives[et_idx], 
+            eta_inclusive = eta_inclusives[eta_idx], 
             et_key = et_key, 
             eta_key = eta_key
         )
