@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from collections import OrderedDict
 
 VAR_INFOS_DTYPES = dict(
     name='str', label='str', tyoe='category', lower_lim='float', upper_lim='float', 
@@ -121,3 +122,20 @@ NAMED_ET_ETA_BINS = {
 }
 
 RANDOM_STATE = 512
+
+RING_COL_NAME = 'trig_L2_cl_ring_{ring_num}'
+RINGS_LAYERS = OrderedDict(
+    presample = (0,8),
+    em1 = (8,72),
+    em2 = (72, 80),
+    em3 = (80,88),
+    had1 = (88,92),
+    had2 = (92,96),
+    had3 = (96,100),
+)
+
+NAMED_DATASETS = {
+    'MC16 Boosted': os.path.join('..', '..', 'data', 'new_mc16_13TeV.302236_309995_341330.sgn.boosted_probes.WZ_llqq_plus_radion_ZZ_llqq_plus_ggH3000.merge.25bins.v2'),
+    '2017 Medium': os.path.join('..', '..', 'data', 'data17_13TeV.AllPeriods.sgn.probes_lhmedium_EGAM1.bkg.VProbes_EGAM7.GRL_v97'),
+    '2017 VLoose': os.path.join('..', '..', 'data', 'data17_13TeV.AllPeriods.sgn.probes_lhvloose_EGAM1.bkg.vprobes_vlhvloose_EGAM7.GRL_v97.25bins')
+}

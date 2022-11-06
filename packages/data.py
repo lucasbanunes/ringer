@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from typing import List
+from packages.constants import NAMED_DATASETS
 
 
 class LocalDataLoader(object):
@@ -17,4 +18,9 @@ class LocalDataLoader(object):
         data_path = os.path.join(self.dataset_path, 'data.parquet')
         data_df = pd.read_parquet(data_path, columns=columns)
         return data_df
-        
+
+class NamedDatasetLoader(LocalDataLoader):
+    
+    def __init__(self, dataset_name: str):
+        self.dataset_name = str(dataset_name)
+        self.dataset_path = NAMED_DATASETS[self.dataset_name]
