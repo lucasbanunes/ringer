@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from collections import defaultdict
-from ringer.constants import RINGS_LAYERS, RING_COL_NAME
+from ringer.constants import RINGS_LAYERS, RING_COL_NAME, GENERATOR_CONFIGS
 
 class RingGenerator(object):
     
@@ -27,7 +27,7 @@ class RingGenerator(object):
     def __call__(self, data):
         rings_data = data[self.selected_rings].astype(np.float32)
         normalized_rings_data = self._normalize(rings_data)
-        rings = [normalized_rings_data[ring_group] for ring_group in self.layered_rings]
+        rings = [normalized_rings_data[ring_group].values for ring_group in self.layered_rings]
         return rings
     
     def _normalize(self, data):
@@ -63,6 +63,15 @@ class RingGenerator(object):
     def __get_rings(self,):
         selected_rings_per_layer = self.__select_rings_per_layer()
         return self.__apply_layer_level(selected_rings_per_layer)
+
+def get_ringer_generator_by_version(ringer_version:str):
+    generators = list()
+    for generator_name, generator_config in GENERATOR_CONFIGS[ringer_version].items():
+        if generator_name == 'RingGenerator': # Hack, must be improved
+            generator.append(RingGenerator(**generator_config))
+        else:
+            raise ValueError(f'Generator name is not supported {generator_name}')
+    return generators
 
 # Defaults to all rings
 default_percentage = lambda : 1.
