@@ -13,9 +13,9 @@ from argparse import ArgumentParser
 from typing import List
 import joblib
 
-from packages.plotting import var_infos, joint_plot
-import packages.utils as utils
-from packages.constants import CRITERIA_CONF_NAMES
+from ringer.plotting import var_infos, joint_plot
+import ringer.utils as utils
+from ringer.constants import CRITERIA_CONF_NAMES
 
 
 def parse_args(var_choices):

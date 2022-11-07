@@ -1,6 +1,6 @@
 import pandas as pd
 from itertools import product
-from .constants import NAMED_ET_ETA_BINS
+from ringer.constants import NAMED_ET_ETA_BINS
 
 class EtEtaRegion(object):
 

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from collections import defaultdict
-from packages.constants import RINGS_LAYERS, RING_COL_NAME
+from ringer.constants import RINGS_LAYERS, RING_COL_NAME
 
 class RingGenerator(object):
     

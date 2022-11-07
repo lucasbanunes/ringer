@@ -11,7 +11,7 @@ import array
 import os
 from itertools import product
 import joblib
-import packages.utils as utils
+import ringer.utils as utils
 
 # Root colors
 # More info at https://root.cern.ch/doc/master/classTColor.html

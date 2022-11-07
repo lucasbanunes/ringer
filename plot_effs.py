@@ -18,9 +18,9 @@ import warnings
 warnings.filterwarnings('ignore')
 from argparse import ArgumentParser
 
-from packages.plotting import make_plot_fig, var_infos, val_label_map, COLORS, MARKERS
-from packages.utils import get_logger
-from packages.constants import CRITERIA_CONF_NAMES, ENERGY_CHAINS, TRIG_STEPS
+from ringer.plotting import make_plot_fig, var_infos, val_label_map, COLORS, MARKERS
+from ringer.utils import get_logger
+from ringer.constants import CRITERIA_CONF_NAMES, ENERGY_CHAINS, TRIG_STEPS
 
 
 def parse_args():

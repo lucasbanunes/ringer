@@ -1,7 +1,7 @@
 import logging
 import logging.config
-from packages.constants import LOGGING_CONFIG, RANDOM_STATE
-from packages.regions import get_named_et_eta_regions
+from ringer.constants import LOGGING_CONFIG, RANDOM_STATE
+from ringer.regions import get_named_et_eta_regions
 import os
 import json
 from itertools import product
