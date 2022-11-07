@@ -33,7 +33,7 @@ class RingGenerator(object):
     def _normalize(self, data):
         norms = self.norm(data)
         norms[norms==0] = 1
-        return data/norms
+        return data/norms.values
     
     def __select_rings_per_layer(self):
         selected_rings_per_layer = list()
@@ -55,9 +55,8 @@ class RingGenerator(object):
             layered_rings = [selected_rings_per_layer[0],
                    np.concatenate(selected_rings_per_layer[1:4], axis=0),
                    np.concatenate(selected_rings_per_layer[4:], axis=0)]
-            return aux
         elif self.layer_level == 2:
-            layered_rings = selected_ringes_per_layer
+            layered_rings = selected_rings_per_layer
         
         return selected_rings, layered_rings
     
