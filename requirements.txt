@@ -1,7 +1,7 @@
-numpy
-pandas
-matplotlib
-scikit-learn
-notebook
-seaborn
-mplhep
+numpy==1.21.1
+pandas  # Defined by rapids
+matplotlib==3.5.0
+scikit-learn # Defined by rapids
+notebook==6.4.10
+seaborn==0.12.1
+mplhep==0.3.26
