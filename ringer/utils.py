@@ -22,14 +22,3 @@ def get_logger(name: str, id=False, stream=True, file=True):
         stream_handler.setFormatter(formatter)
         logger.addHandler(stream_handler)
     return logger
-
-def get_electron_label(data: pd.DataFrame, criterion: str):
-    return (data['target'] == 1) & (data[criterion] == 1)
-
-def get_jet_label(data: pd.DataFrame, criterion: str):
-    return (data['target'] != 1) & (data[criterion] != 1)
-
-LABEL_UTILITIES = {
-    'electron': get_electron_label,
-    'jet': get_jet_label
-}
