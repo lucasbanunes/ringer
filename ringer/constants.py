@@ -164,3 +164,6 @@ NAMED_DATASETS = {
 GENERATOR_CONFIGS = {
     'vInception.2': {'RingGenerator': dict(ring_percentage=1., norm='l1', layer_level=1)}
 }
+
+DEFAULT_FIGSIZE = (9,6.6)
+DEFAULT_DPI = 72
