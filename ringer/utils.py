@@ -3,6 +3,7 @@ import logging
 import os
 from datetime import datetime
 from itertools import product
+from typing import Iterable, Dict
 
 def get_logger(name: str, id=False, stream=True, file=True):
     logger = logging.getLogger(name)
@@ -22,3 +23,14 @@ def get_logger(name: str, id=False, stream=True, file=True):
         stream_handler.setFormatter(formatter)
         logger.addHandler(stream_handler)
     return logger
+
+def medium_keys_mapping(keys:Iterable[str]) -> Dict[str, str]:
+
+    mapping = dict()
+    for key in keys:
+        medium_key = key.replace('trig_L2_cl', 'L2Calo')
+        if medium_key.startswith('el_'):
+            medium_key = medium_key[3:]
+        mapping[medium_key] = key
+    
+    return mapping

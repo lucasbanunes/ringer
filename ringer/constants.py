@@ -11,7 +11,7 @@ VAR_INFOS_PATH = os.path.join(
         '..', 
         'data', 
         'var_infos.csv'
-    ),
+    )
 
 DROP_COLS = [
     'RunNumber', 
@@ -144,20 +144,20 @@ NAMED_DATASETS = {
     'MC16 Boosted': os.path.join(
         '..', 
         '..', 
-        'data', 
+        'data',
         'new_mc16_13TeV.302236_309995_341330.sgn.boosted_probes.WZ_llqq_plus_radion_ZZ_llqq_plus_ggH3000.merge.25bins.v2'
     ),
     '2017 Medium': os.path.join(
         '..', 
         '..', 
         'data', 
-        'data17_13TeV.AllPeriods.sgn.probes_lhmedium_EGAM1.bkg.VProbes_EGAM7.GRL_v97'
+        'new_data17_13TeV.AllPeriods.sgn.probes_lhmedium_EGAM1.bkg.VProbes_EGAM7.GRL_v97'
     ),
     '2017 VLoose': os.path.join(
         '..', 
         '..', 
         'data', 
-        'data17_13TeV.AllPeriods.sgn.probes_lhvloose_EGAM1.bkg.vprobes_vlhvloose_EGAM7.GRL_v97.25bins'
+        'new_data17_13TeV.AllPeriods.sgn.probes_lhvloose_EGAM1.bkg.vprobes_vlhvloose_EGAM7.GRL_v97.25bins'
     )
 }
 
