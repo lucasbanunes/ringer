@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import Union
 
+from ringer.utils import get_triangle_angle
+
 def joint_plot(data, x, y, et_cut=None, ylim=None,
                 xlim=None, xlabel=None, ylabel=None, data_label=None, criterion=None,
                 title=None, cmap=None, marg_color=None, figsize=None):
@@ -45,43 +47,72 @@ def joint_plot(data, x, y, et_cut=None, ylim=None,
     jplot.figure.tight_layout()
     return jplot
 
-def wasserstein_mapping_plot(distances: pd.Series, title: Union[str, None] = None, 
-    legend_kwargs: Union[dict, None] = None, filepath: Union[str, None] = None):
-    
-    distances = distances.copy()
+def distance_triangle_plot(
+    a: float,
+    b: float,
+    c: float,
+    a_err: float = 0.0,
+    b_err: float = 0.0,
+    c_err: float = 0.0,
+    A_label: Union[str, None] = None,
+    B_label: Union[str, None] = None,
+    C_label: Union[str, None] = None,
+    degrees:bool = True,
+    title: Union[str, None] = None,
+    plot_references: bool = True,
+    legend: bool = True,
+    legend_kwargs: dict = {},
+    tight_layout:bool = True, 
+    filepath: Union[str, None] = None
+):
+    alpha, alpha_err = get_triangle_angle(a,b,c,a_err,b_err,c_err)
     fig, ax = plt.subplots(1,1)
-    electron = np.array((0,0))
-    jet = np.array((electron[0]+distances['el_jet'], 0))
-    boosted_x = distances['boosted_el'] if distances['beta'] < np.pi/2 else -distances['boosted_el']
-    boosted = np.array((electron[0] + boosted_x, distances['boosted_height']))
-    min_xlim = 0-(distances['el_jet']*0.1) if distances['beta'] < np.pi/2 else -distances['boosted_el']*1.1
-    max_xlim = max(distances['el_jet'], distances['boosted_el'])*1.1
+    A = np.array((0,0))
+    B = np.array((c, 0))
+    C = np.array((b*np.cos(alpha), b*np.sin(alpha)))
+    coords = np.row_stack([A,B,C])
+    min_x = coords[:,0].min()
+    left_xlim = min_x-(c*0.1)
 
     # Plotting the triangle first for the markers to be on top
-    ax.plot([electron[0], boosted[0], jet[0], electron[0]], 
-        [electron[1], boosted[1], jet[1], electron[1]], color='k', alpha=0.3)
-    ax.annotate(str(round(distances['boosted_el'], 4)), xy=(electron+boosted)/2)
-    ax.annotate(str(round(distances['boosted_jet'], 4)), xy=(jet+boosted)/2)
-    ax.annotate(str(round(distances['el_jet'], 4)), xy=(electron+jet)/2)
+    ax.plot([A[0], B[0], C[0], A[0]], [A[1], B[1], C[1], A[1]],
+            color='k', alpha=0.3)
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    a_anottation = f'${round(a, 4)} \\pm {round(a_err, 4)}$'
+    ax.annotate(a_anottation, xy=list((B+C)/2))
+    b_anottation = f'${round(b, 4)} \\pm {round(b_err, 4)}$'
+    ax.annotate(b_anottation, xy=list((A+C)/2))
+    c_anottation = f'${round(c, 4)} \\pm {round(c_err, 4)}$'
+    ax.annotate(c_anottation, xy=list((A+B)/2))
 
     # Scatter for vertices marking
-    ax.scatter([boosted[0]], [boosted[1]], label='Boosted', color='C0')
-    ax.scatter([electron[0]], [electron[1]], label='Electron', color='C1')
-    ax.scatter([jet[0]], [jet[1]], label='Jet', color='C2')
+    ax.scatter([C[0]], [C[1]], label=C_label, color='C0')
+    ax.scatter([A[0]], [A[1]], label=A_label, color='C1')
+    ax.scatter([B[0]], [B[1]], label=B_label, color='C2')
 
-    #Plotting reference lines
-    ax.plot([-1e3,-1e3],[1e3,1e3], color='red', alpha=0.3, linestyle='--', label='y=x')
-    ax.axvline(0, color='blue', alpha=0.3, linestyle='--', label='y=0')
+    if plot_references:
+        ax.plot([-1e3,1e3],[-1e3,1e3], color='red', alpha=0.3, linestyle='--', label='y=x')
+        ax.axvline(0, color='blue', alpha=0.3, linestyle='--', label='y=0')
 
-    #Hack for text wrigint on legend
-    ax.scatter([1e6], [1e6], label=f'$\\beta = {round(distances["beta"], 2)}$ rad', color='white')
+    #Hack for text writing on legend
+    if degrees:
+        alpha_label = f'$\\alpha = {round(np.rad2deg(alpha), 2)} \\pm '
+        alpha_label += f'{round(np.rad2deg(alpha_err), 2)}$ deg'
+    else:
+        alpha_label = f'$\\alpha = {round(alpha, 2)} \\pm {round(alpha_err, 2)}$ rad'
+    ax.scatter([1e6], [1e6], label=alpha_label, color='white')
 
-    ax.set(ylim=(0-distances['boosted_height']*0.1,distances['boosted_height']*1.1), 
-        xlim=(min_xlim,max_xlim),
+    ax.set(ylim=ylim, 
+        xlim=(left_xlim, xlim[1]),
         title=title if title is not None else 'Wasserstein Mapping')
-    if legend_kwargs is not None:
+
+    if legend:
         ax.legend(**legend_kwargs)
+
     sns.despine(ax=ax)
+    if tight_layout:
+        fig.tight_layout()
 
     if filepath is not None:
         fig.savefig(filepath, transparent=False, facecolor='white')

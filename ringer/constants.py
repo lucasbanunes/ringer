@@ -7,8 +7,6 @@ VAR_INFOS_DTYPES = dict(
     l2calo='str', offline='str', TaP='str', description='str'
 )
 VAR_INFOS_PATH = os.path.join(
-        '..', 
-        '..', 
         'data', 
         'var_infos.csv'
     )
