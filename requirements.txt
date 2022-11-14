@@ -5,3 +5,4 @@ scikit-learn # Defined by rapids
 notebook==6.4.10
 seaborn==0.12.1
 mplhep==0.3.26
+flake8==5.0.4
