@@ -20,9 +20,6 @@ from ringer.constants import LOGGING_CONFIG
 logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger('ringer_debug')
 
-var_infos = load_var_infos()
-wass_distances = pd.read_csv(os.path.join('..', '..', 'data', 'wass_distances.csv'), index_col=0)
-
 def plot_variables(vars_to_plot: Iterable[str], description_start: str):
     plots = dict()
     for var_name in vars_to_plot:
@@ -43,30 +40,32 @@ def plot_variables(vars_to_plot: Iterable[str], description_start: str):
             raise ValueError(f'{description_start} value for description_start is not supported')
         
         plots[var_name] = distance_triangle_plot(
-        a = var_distances.loc['mean', 'boosted_jet'],
-        b = var_distances.loc['mean', 'boosted_el'],
-        c = var_distances.loc['mean', 'el_jet'],
-        a_err = var_distances.loc['std', 'boosted_jet'],
-        b_err = var_distances.loc['std', 'boosted_el'],
-        c_err = var_distances.loc['std', 'el_jet'],
-        A_label = 'electron',
-        B_label = 'jet',
-        C_label = 'boosted',
-        degrees=True,
-        title = f'{var_infos.loc[var_name, "label"]} Wasserstein Mapping',
-        plot_references = True,
-        legend = True,
-        legend_kwargs = {} if var_name != 'f1' else dict(loc=2),
-        tight_layout=True,
-        filepath = os.path.join(
-            'analysis',
-            'wasserstein_mapping',
-            f'{var_name}_{description_start}_mapping.png'
-        )
+            a = var_distances.loc['mean', 'boosted_jet'],   # type: ignore
+            b = var_distances.loc['mean', 'boosted_el'],    # type: ignore
+            c = var_distances.loc['mean', 'el_jet'],    # type: ignore
+            a_err = var_distances.loc['std', 'boosted_jet'],  # type: ignore
+            b_err = var_distances.loc['std', 'boosted_el'], # type: ignore
+            c_err = var_distances.loc['std', 'el_jet'], # type: ignore
+            A_label = 'electron',
+            B_label = 'jet',
+            C_label = 'boosted',
+            degrees=True,
+            title = f'{var_infos.loc[var_name, "label"]} Wasserstein Mapping',
+            plot_references = True,
+            legend = True,
+            legend_kwargs = {} if var_name != 'f1' else dict(loc=2),
+            tight_layout=True,
+            filepath = os.path.join(
+                'analysis',
+                'wasserstein_mapping',
+                f'{var_name}_{description_start}_mapping.png'
+            )
     )
 
     return plots
 
+var_infos = load_var_infos()
+wass_distances = pd.read_csv(os.path.join('..', '..', 'data', 'wass_distances.csv'), index_col=0)
 logger.info('Script start')
 vars_to_plot = wass_distances['name'].unique()
 plot_variables(vars_to_plot, 'fold')

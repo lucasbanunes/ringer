@@ -1,15 +1,7 @@
 import os
 import logging
 import logging.config
-# import numpy as np
 import pandas as pd
-# import matplotlib.pyplot as plt
-# import mplhep as hep
-# plt.style.use(hep.style.ATLAS)
-# plt.rc('legend',fontsize='large')
-# plt.rc('axes',labelsize='x-large')
-# plt.rc('text',usetex='false')
-# plt.rc('xtick', labelsize='large')
 from scipy.stats import wasserstein_distance
 from itertools import combinations
 from ringer.constants import LOGGING_CONFIG
@@ -72,19 +64,8 @@ collision_data.rename(medium_col_mapping, axis=1, inplace=True)
 jet_label = ~collision_data['target'].astype(bool)
 el_label = collision_data['target'].astype(bool)
 logger.info(f'There are {jet_label.sum()} jets and {el_label.sum()} electrons')
-# collision_data.drop(['target'], axis=1, inplace=True)
 logger.info('Loaded collision data')
 
-# el_data = collision_data.loc[el_label]
-# jet_data = collision_data.loc[jet_label]
-# del collision_data
-# logger.info('Loaded el and jet data')
-
-# data = {
-#     'boosted': boosted_data,
-#     'el': el_data,
-#     'jet': jet_data
-# }
 
 ss_filters = {
     'f3': lambda x: x,
