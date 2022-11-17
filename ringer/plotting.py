@@ -62,6 +62,7 @@ def distance_triangle_plot(
     plot_references: bool = True,
     legend: bool = True,
     legend_kwargs: dict = {},
+    text_kwargs: dict = {},
     tight_layout:bool = True, 
     filepath: Union[str, None] = None
 ):
@@ -109,6 +110,10 @@ def distance_triangle_plot(
 
     if legend:
         ax.legend(**legend_kwargs)
+
+    if text_kwargs:
+        text_kwargs['transform'] = ax.transAxes
+        ax.text(**text_kwargs)
 
     sns.despine(ax=ax)
     if tight_layout:

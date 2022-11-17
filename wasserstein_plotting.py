@@ -39,7 +39,7 @@ def plot_variables(vars_to_plot: Iterable[str], description_start: str):
         else:
             raise ValueError(f'{description_start} value for description_start is not supported')
         
-        plots[var_name] = distance_triangle_plot(
+        fig, ax = distance_triangle_plot(
             a = var_distances.loc['mean', 'boosted_jet'],   # type: ignore
             b = var_distances.loc['mean', 'boosted_el'],    # type: ignore
             c = var_distances.loc['mean', 'el_jet'],    # type: ignore
@@ -54,16 +54,32 @@ def plot_variables(vars_to_plot: Iterable[str], description_start: str):
             plot_references = True,
             legend = True,
             legend_kwargs = {} if var_name != 'f1' else dict(loc=2),
-            tight_layout=True,
+            tight_layout = True,
+            text_kwargs = dict(
+                x=text_positions[var_name][0],
+                y=text_positions[var_name][1],
+                s=var_infos.loc[var_name, 'formula'],
+                fontsize='x-large',
+                bbox=dict(boxstyle='round', facecolor='white', edgecolor='white', alpha=0)
+            ),
             filepath = os.path.join(
                 'analysis',
                 'wasserstein_mapping',
-                f'{var_name}_{description_start}_mapping.png'
+                f'{var_name}_{description_start}_mapping.png')
             )
-    )
+
+        # ax.text(*text_positions[var_name], s=var_infos.loc[var_name, 'formula'], fontsize='x-large', transform=ax.transAxes, #type: ignore
+        #     bbox=dict(boxstyle='round', facecolor='white', edgecolor='white', alpha=0)) #type: ignore
+        # fig.savefig(os.path.join(
+        #         'analysis',
+        #         'wasserstein_mapping',
+        #         f'{var_name}_{description_start}_mapping.png'))
+        plots[var_name] = (fig, ax)
 
     return plots
 
+text_positions = dict(reta=(0.4,0.87), eratio=(0.25,0.87), f1=(0.3,0.87), f3=(0.2,0.87), wstot=(0.25,0.87), 
+    weta2=(0.2,0.87), rhad=(0.15,0.87), rhad1=(0.15,0.87), rphi=(0.4,0.87))
 var_infos = load_var_infos()
 wass_distances = pd.read_csv(os.path.join('..', '..', 'data', 'wass_distances.csv'), index_col=0)
 logger.info('Script start')
