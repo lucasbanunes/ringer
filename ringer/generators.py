@@ -8,7 +8,7 @@ class RingGenerator(object):
     __VALID_NORMS = ['l1']
     __VALID_LAYER_LEVELS = [0,1,2]
     
-    def __init__(self, ring_percentage=1., norm='l1', layer_level=0):
+    def __init__(self, ring_percentage=1., norm='l1', layer_level=0, norm_by_level:bool=False):
         if ring_percentage <=0 or ring_percentage > 1.:
             raise ValueError('The ring percentage must be between 0 and 1')
         
@@ -23,11 +23,21 @@ class RingGenerator(object):
         self.ring_percentage = ring_percentage
         self.layer_level = layer_level
         self.selected_rings, self.layered_rings = self.__get_rings()
+        self.norm_by_level=bool(norm_by_level)
 
-    def __call__(self, data):
+    def __call__(self, data: pd.DataFrame):
         rings_data = data[self.selected_rings].astype(np.float32)
-        normalized_rings_data = self._normalize(rings_data)
-        rings = [normalized_rings_data[ring_group].values for ring_group in self.layered_rings]
+        if self.norm_by_level:
+            rings = [
+                self._normalize(rings_data[ring_group]).values
+                for ring_group in self.layered_rings
+            ]
+        else:
+            normalized_rings_data = self._normalize(rings_data)
+            rings = [
+                normalized_rings_data[ring_group].values
+                for ring_group in self.layered_rings
+            ]
         return rings
     
     def _normalize(self, data):
