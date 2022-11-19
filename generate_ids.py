@@ -30,8 +30,8 @@ N_FOLDS = 10
 logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger('ringer_debug')
 
-dataset = 'mc16_13TeV.302236_309995_341330.sgn.boosted_probes.WZ_llqq_plus_radion_ZZ_llqq_plus_ggH3000.merge.25bins.v2'; load_func = 'kload'; region_name = 'L2Calo_2017'
-# dataset = 'data17_13TeV.AllPeriods.sgn.probes_lhmedium_EGAM1.bkg.VProbes_EGAM7.GRL_v97'; load_func = 'gload'; region_name = 'L2Calo_2017_alt'
+# dataset = 'mc16_13TeV.302236_309995_341330.sgn.boosted_probes.WZ_llqq_plus_radion_ZZ_llqq_plus_ggH3000.merge.25bins.v2'; load_func = 'kload'; region_name = 'L2Calo_2017'
+dataset = 'data17_13TeV.AllPeriods.sgn.probes_lhmedium_EGAM1.bkg.VProbes_EGAM7.GRL_v97'; load_func = 'gload'; region_name = 'L2Calo_2017_alt'
 # dataset = 'data17_13TeV.AllPeriods.sgn.probes_lhvloose_EGAM1.bkg.vprobes_vlhvloose_EGAM7.GRL_v97.25bins'; load_func = 'kload'; region_name = 'L2Calo_2017'
 
 basepath = os.path.join('..', '..')
@@ -50,6 +50,8 @@ splitted_data = list()
 for region in et_eta_regions:
     logger.info(f'Processing (et_idx, eta_idx) {(region.et_idx, region.eta_idx)}')
     data_df = load_data_with_func(filepath.format(et=region.et_idx, eta=region.eta_idx), load_func)
+    if data_df.empty:
+        raise ValueError('The data is empty')
     
     if dataset == 'data17_13TeV.AllPeriods.sgn.probes_lhmedium_EGAM1.bkg.VProbes_EGAM7.GRL_v97':
         #This is tested because this dataset has a predifined kfold
@@ -81,6 +83,8 @@ data_df['id'] = data_df['id'].astype('uint64')
 for region in et_eta_regions:
     logger.info(f'Saving (et_idx, eta_idx) {(region.et_idx, region.eta_idx)}')
     save_df = data_df.loc[region.get_filter(data_df)]
+    if save_df.empty:
+        raise ValueError('The save_df is empty')
     save_df.to_parquet(out_filepath.format(et=region.et_idx, eta=region.eta_idx))
 
 # Export schema
