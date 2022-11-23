@@ -7,7 +7,7 @@
 5,ehad1,$E_{had1}$,unidentified,-inf,inf,trig_L2_cl_ehad1,el_ehad1,,,unidentified
 6,f3,$f_3$,shower_shape,0.0,1.0,trig_L2_cl_f3,el_f3,,$f_3 = \frac{E^{total}_{EM3}}{E^{total}_{EM}}$,"Ratio of the energy in the third layer to the total energy in the EM calorimeter. This variable is only used for et < 80 GeV, due to inefficiencies at high et, and is also removed from the LH for |eta| > 2.37, where it is poorly modelled by the simulation"
 7,wstot,$\omega_{stot}$,shower_shape,0.0,inf,trig_L2_cl_wstot,el_wstot,,$\omega_{stot} = \sqrt{\frac{\Sigma(E_i - E_{i}^{max})^2}{\Sigma E_i}}$,Shower width er > 150 GeV only on EM1
-8,weta2,$\omega_{\eta 2}$,shower_shape,0.0,inf,trig_L2_cl_weta2,el_weta2,,$\omega_{\eta2} = \sqrt{\frac{\Sigma E_i \: X\:  \eta^2_{i}}{\Sigma E_i} -(\frac{\Sigma E_i \: X \: \eta_{i}}{\Sigma E_i})^2}$,Lateral shower width on EM2
+8,weta2,$\omega_{\eta^2}$,shower_shape,0.0,inf,trig_L2_cl_weta2,el_weta2,,$\omega_{\eta2} = \sqrt{\frac{\Sigma E_i \: X\:  \eta^2_{i}}{\Sigma E_i} -(\frac{\Sigma E_i \: X \: \eta_{i}}{\Sigma E_i})^2}$,Lateral shower width on EM2
 9,e2tsts1,e2tsts1,unidentified,-inf,inf,trig_L2_cl_e2tsts1,el_e2tsts1,,,unidentified
 10,dr,$\Delta R$,var,-inf,inf,,,el_TaP_deltaR,,angular separation between particles from same decay
 11,rhad,$R_{had}$,shower_shape,-inf,inf,,el_rhad,,$R_{had} = \frac{E^{HAD1}_{T}}{E^{EM}_{T}} \; |\eta| < 0.8 \;\cup \; |\eta| > 1.37$,Ratio of et in the first layer of the hadronic calorimeter to et of the EM cluster (used over the range 0.8<|eta|1.37)
