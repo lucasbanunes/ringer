@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from itertools import product
 from typing import Dict, Iterable, Union, Tuple
+from numbers import Number
 
 import numpy as np
 import numpy.typing as npt
@@ -39,7 +40,7 @@ def medium_keys_mapping(keys:Iterable[str]) -> Dict[str, str]:
     
     return mapping
 
-def get_triangle_angle(a: float, b: float, c: float,
+def euclidean_triangle_angle(a: float, b: float, c: float,
     a_err: float=0.0, b_err: float=0.0,
     c_err: float=0.0) -> Tuple[np.float64, np.float64]:
     """
@@ -62,7 +63,7 @@ def get_triangle_angle(a: float, b: float, c: float,
         Measure error of b
     c_err: float
         Measure error of c
-    
+
     Returns
     -------
     alpha: numpy.float64
@@ -91,3 +92,15 @@ def get_triangle_angle(a: float, b: float, c: float,
     alpha_err = np.sqrt(alpha_err2)
 
     return alpha, alpha_err
+
+
+def get_number_order(num: Number) -> np.integer:
+    return np.floor(np.log10(np.abs(num)))  # type: ignore
+
+
+def significant_around(val: Number,
+                      err: Number) -> Tuple[np.floating, np.floating]:
+    err_order = get_number_order(err)
+    val_arounded = np.around(val, -err_order)  # type: ignore
+    err_arounded = np.around(err, -err_order)  # type: ignore
+    return val_arounded, err_arounded

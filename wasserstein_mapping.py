@@ -1,3 +1,8 @@
+"""This script makes a plot of the triangle defined between 3 distributions
+over the metric space defined by the Wasserstein Distance.
+ATTENTION: This script is not valid because it uses properties from
+an euclidean space (euclidean norm) to make the plots.
+"""
 import os
 import logging
 import logging.config
@@ -13,7 +18,7 @@ plt.rc('text',usetex='false')
 plt.rc('xtick', labelsize='large')
 plt.rc('figure', figsize=DEFAULT_FIGSIZE)
 plt.rc('figure', dpi=DEFAULT_DPI)
-from ringer.plotting import distance_triangle_plot
+from ringer.plotting import euclidean_triangle_plot
 from ringer.data import load_var_infos
 from ringer.constants import LOGGING_CONFIG
 
@@ -21,19 +26,19 @@ logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger('ringer_debug')
 
 
-def plot_variables(vars_to_plot: Iterable[str],
-                   description_start: str, output_dir: str):
+def plot_variables(vars_to_plot: Iterable[str], description_name: str,
+                   description_regex: str, output_dir: str):
     plots = dict()
     for var_name in vars_to_plot:
-        logger.info(f'Plotting {var_name}: {description_start}')
+        logger.info(f'Plotting {var_name}: {description_name}')
         is_fold_data = wass_distances['description'].str \
-            .startswith(description_start)
+            .contains(description_regex)
         is_var_data = wass_distances['name'] == var_name
 
-        if description_start == 'fold':
+        if description_name == 'train_fold':
             var_distances = wass_distances.loc[is_fold_data & is_var_data] \
                 .describe()
-        elif description_start == 'complete':
+        elif description_name == 'complete':
             var_distances = pd.DataFrame(
                 index=['mean', 'std'],
                 columns=wass_distances.columns
@@ -42,11 +47,11 @@ def plot_variables(vars_to_plot: Iterable[str],
                 .loc[is_fold_data & is_var_data].iloc[0]
             var_distances.loc['std'] = 0
         else:
-            raise ValueError(f"{description_start} value for description_start"
-                             "is not supported")
+            raise ValueError(f"{description_name} value for description_name"
+                             " is not supported")
 
         fig, ax = plt.subplots()
-        distance_triangle_plot(
+        euclidean_triangle_plot(
             ax=ax,
             a=var_distances.loc['mean', 'boosted_jet'],   # type: ignore
             b=var_distances.loc['mean', 'boosted_el'],    # type: ignore
@@ -75,7 +80,7 @@ def plot_variables(vars_to_plot: Iterable[str],
         )
         figpath = os.path.join(
                 output_dir,
-                f'{var_name}_{description_start}_mapping.png')
+                f'{var_name}_{description_name}_mapping.png')
         fig.savefig(figpath)
         plots[var_name] = (fig, ax)
 
@@ -93,9 +98,10 @@ text_positions = dict(
     rhad1=(0.15, 0.87),
     rphi=(0.4, 0.87)
 )
-output_dir = os.path.join('analysis', 'wasserstein_mapping')
+output_dir = os.path.join('analysis', 'euclidean_wasserstein_mapping')
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
+train_fold_regex = 'fold_[0-9]+_train'
 
 var_infos = load_var_infos()
 wass_distances = pd.read_csv(
@@ -104,6 +110,6 @@ wass_distances = pd.read_csv(
 )
 logger.info('Script start')
 vars_to_plot = wass_distances['name'].unique()
-plot_variables(vars_to_plot, 'fold', output_dir)
-plot_variables(vars_to_plot, 'complete', output_dir)
+plot_variables(vars_to_plot, 'train_fold', train_fold_regex, output_dir)
+plot_variables(vars_to_plot, 'complete', 'complete', output_dir)
 logger.info('Script end')

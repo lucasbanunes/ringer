@@ -10,7 +10,7 @@ from matplotlib.patches import Circle
 import seaborn as sns
 from typing import Union, Tuple
 
-from ringer.utils import get_triangle_angle
+from ringer.utils import euclidean_triangle_angle
 
 
 def joint_plot(data, x, y, et_cut=None, ylim=None, xlim=None,
@@ -64,7 +64,7 @@ def elipse_section(theta_start: float, theta_end: float,
     return x, y
 
 
-def distance_triangle_plot(
+def euclidean_triangle_plot(
     a: float,
     b: float,
     c: float,
@@ -83,7 +83,7 @@ def distance_triangle_plot(
     alpha: float = 1.,
     ax: Union[Axes, None] = None
 ):
-    alpha_ang, alpha_ang_err = get_triangle_angle(
+    alpha_ang, alpha_ang_err = euclidean_triangle_angle(
         a, b, c,
         a_err, b_err, c_err)  # type: ignore
 
@@ -93,7 +93,6 @@ def distance_triangle_plot(
     A = np.array((0, 0))
     B = np.array((c, 0))
     C = np.array((b*np.cos(alpha_ang), b*np.sin(alpha_ang)))
-    # print(f'C value: {C}, alpha: {alpha_ang}, atan: {math.atan2(C[1], C[0])}')
 
     coords = np.row_stack([A, B, C])
     min_x = coords[:, 0].min()
@@ -158,10 +157,5 @@ def distance_triangle_plot(
         ax.text(**text_kwargs)
 
     sns.despine(ax=ax)
-    # if tight_layout:
-    #     fig.tight_layout()
-
-    # if filepath is not None:
-    #     fig.savefig(filepath, transparent=False, facecolor='white')
 
     return ax
