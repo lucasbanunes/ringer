@@ -55,10 +55,12 @@ def get_wasserstein_distances(
             msg = f'{ss_name}: computing wasserstein_distance'
             msg += f'({left}, {right}) {description}'
             logger.info(msg)
-            left_data = ss_filters[ss_name](data[left][ss_col])
-            right_data = ss_filters[ss_name](data[right][ss_col])
-            wass_distances.loc[ss_name, f'{left}_{right}'] = \
-                wasserstein_distance(left_data, right_data)
+            ss_filter = ss_filters[ss_name]  # type: ignore
+            left_data = ss_filter(data[left][ss_col])
+            right_data = ss_filter(data[right][ss_col])
+            wass_distances.loc[str(ss_name), f'{left}_{right}'] \
+                = wasserstein_distance(left_data,
+                                       right_data)
 
     wass_distances['description'] = description
     return wass_distances

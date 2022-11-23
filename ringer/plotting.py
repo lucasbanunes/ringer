@@ -1,16 +1,21 @@
 import os
 import pandas as pd
 import numpy as np
+import math
+from numpy.typing import NDArray
 import ringer.utils as utils
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.patches import Circle
 import seaborn as sns
-from typing import Union
+from typing import Union, Tuple
 
 from ringer.utils import get_triangle_angle
 
-def joint_plot(data, x, y, et_cut=None, ylim=None,
-                xlim=None, xlabel=None, ylabel=None, data_label=None, criterion=None,
-                title=None, cmap=None, marg_color=None, figsize=None):
+
+def joint_plot(data, x, y, et_cut=None, ylim=None, xlim=None,
+               xlabel=None, ylabel=None, data_label=None, criterion=None,
+               title=None, cmap=None, marg_color=None, figsize=None):
     raise NotImplementedError('Must be refactored')
     if (data_label is not None) and (data_label != 'all') and (criterion is not None):
         data_labeling_func = utils.LABEL_UTILITIES[data_label]
@@ -47,6 +52,18 @@ def joint_plot(data, x, y, et_cut=None, ylim=None,
     jplot.figure.tight_layout()
     return jplot
 
+
+def elipse_section(theta_start: float, theta_end: float,
+                   a: float, b: float,
+                   num: int = 100
+                   ) -> Tuple[NDArray[np.floating], NDArray[np.floating]]:
+
+    theta = np.linspace(theta_start, theta_end, num)
+    x = a*np.cos(theta)
+    y = b*np.sin(theta)
+    return x, y
+
+
 def distance_triangle_plot(
     a: float,
     b: float,
@@ -57,69 +74,94 @@ def distance_triangle_plot(
     A_label: Union[str, None] = None,
     B_label: Union[str, None] = None,
     C_label: Union[str, None] = None,
-    degrees:bool = True,
+    degrees: bool = True,
     title: Union[str, None] = None,
     plot_references: bool = True,
     legend: bool = True,
     legend_kwargs: dict = {},
     text_kwargs: dict = {},
-    tight_layout:bool = True, 
-    filepath: Union[str, None] = None
+    alpha: float = 1.,
+    ax: Union[Axes, None] = None
 ):
-    alpha, alpha_err = get_triangle_angle(a,b,c,a_err,b_err,c_err)
-    fig, ax = plt.subplots(1,1)
-    A = np.array((0,0))
+    alpha_ang, alpha_ang_err = get_triangle_angle(
+        a, b, c,
+        a_err, b_err, c_err)  # type: ignore
+
+    if ax is None:
+        _, ax = plt.subplots(1, 1)
+
+    A = np.array((0, 0))
     B = np.array((c, 0))
-    C = np.array((b*np.cos(alpha), b*np.sin(alpha)))
-    coords = np.row_stack([A,B,C])
-    min_x = coords[:,0].min()
+    C = np.array((b*np.cos(alpha_ang), b*np.sin(alpha_ang)))
+    # print(f'C value: {C}, alpha: {alpha_ang}, atan: {math.atan2(C[1], C[0])}')
+
+    coords = np.row_stack([A, B, C])
+    min_x = coords[:, 0].min()
     left_xlim = min_x-(c*0.1)
 
     # Plotting the triangle first for the markers to be on top
     ax.plot([A[0], B[0], C[0], A[0]], [A[1], B[1], C[1], A[1]],
-            color='k', alpha=0.3)
+            color='k', alpha=alpha)
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
-    a_anottation = f'${round(a, 4)} \\pm {round(a_err, 4)}$'
+    a_err_str = '' if np.isclose(a_err, 0) else f'$\\pm {round(a_err, 4)}$'
+    a_anottation = f'${round(a, 4)}$' + a_err_str
     ax.annotate(a_anottation, xy=list((B+C)/2))
-    b_anottation = f'${round(b, 4)} \\pm {round(b_err, 4)}$'
+    b_err_str = '' if np.isclose(b_err, 0) else f'$\\pm {round(b_err, 4)}$'
+    b_anottation = f'${round(b, 4)}$' + b_err_str
     ax.annotate(b_anottation, xy=list((A+C)/2))
-    c_anottation = f'${round(c, 4)} \\pm {round(c_err, 4)}$'
+    c_err_str = '' if np.isclose(c_err, 0) else f'$\\pm {round(c_err, 4)}$'
+    c_anottation = f'${round(c, 4)}$' + c_err_str
     ax.annotate(c_anottation, xy=list((A+B)/2))
 
     # Scatter for vertices marking
-    ax.scatter([C[0]], [C[1]], label=C_label, color='C0')
-    ax.scatter([A[0]], [A[1]], label=A_label, color='C1')
-    ax.scatter([B[0]], [B[1]], label=B_label, color='C2')
+    ax.scatter([C[0]], [C[1]], label=C_label, color='C0', alpha=alpha)
+    ax.scatter([A[0]], [A[1]], label=A_label, color='C1', alpha=alpha)
+    ax.scatter([B[0]], [B[1]], label=B_label, color='C2', alpha=alpha)
 
     if plot_references:
-        ax.plot([-1e3,1e3],[-1e3,1e3], color='red', alpha=0.3, linestyle='--', label='y=x')
+        x = np.linspace(-1, 1, 100)
+        ax.plot(x, -x,
+                color='green', alpha=0.3, linestyle='--', label='y=-x')
         ax.axvline(0, color='blue', alpha=0.3, linestyle='--', label='y=0')
+        ax.plot(x, x,
+                color='red', alpha=0.3, linestyle='--', label='y=x')
 
-    #Hack for text writing on legend
     if degrees:
-        alpha_label = f'$\\alpha = {round(np.rad2deg(alpha), 2)} \\pm '
-        alpha_label += f'{round(np.rad2deg(alpha_err), 2)}$ deg'
+        alpha_ang_err_str = '' if np.isclose(np.rad2deg(alpha_ang_err), 0) \
+            else f'$\\pm {round(np.rad2deg(alpha_ang_err), 4)}$'
+        alpha_ang_label = f'$\\alpha = {round(np.rad2deg(alpha_ang), 2)}$'
+        alpha_ang_label += alpha_ang_err_str
     else:
-        alpha_label = f'$\\alpha = {round(alpha, 2)} \\pm {round(alpha_err, 2)}$ rad'
-    ax.scatter([1e6], [1e6], label=alpha_label, color='white')
+        alpha_ang_err_str = '' if np.isclose(alpha_ang_err, 0) \
+            else f'$\\pm {round(alpha_ang_err, 4)}$'
+        alpha_ang_label = f'$\\alpha = {round(alpha_ang, 2)}$'
+        alpha_ang_label += alpha_ang_err_str
+    ax.scatter([1e6], [1e6], label=alpha_ang_label, color='white')
+    # elipse_coords = elipse_section(0, alpha_ang,   # type:ignore
+    #                                a=0.05*c, b=0.05*b*np.sin(alpha_ang))
+    # ax.plot(*elipse_coords, color='k', alpha=alpha,
+    #         linestyle='-', label=alpha_ang_label)
 
-    ax.set(ylim=ylim, 
-        xlim=(left_xlim, xlim[1]),
-        title=title if title is not None else 'Wasserstein Mapping')
+    ax.set(ylim=ylim,
+           xlim=(left_xlim, xlim[1]),
+           title=title if title is not None else 'Wasserstein Mapping')
 
     if legend:
         ax.legend(**legend_kwargs)
 
     if text_kwargs:
-        text_kwargs['transform'] = ax.transAxes
+        try:
+            text_kwargs['transform']
+        except KeyError:
+            text_kwargs['transform'] = ax.transAxes
         ax.text(**text_kwargs)
 
     sns.despine(ax=ax)
-    if tight_layout:
-        fig.tight_layout()
+    # if tight_layout:
+    #     fig.tight_layout()
 
-    if filepath is not None:
-        fig.savefig(filepath, transparent=False, facecolor='white')
-    
-    return fig, ax
+    # if filepath is not None:
+    #     fig.savefig(filepath, transparent=False, facecolor='white')
+
+    return ax
