@@ -6,6 +6,9 @@ from ringer.constants import NAMED_ET_ETA_BINS
 
 class EtEtaRegion(object):
 
+    __GEQ_INCLUSIVES = ['left', 'both']
+    __LEQ_INCLUSIVES = ['right', 'both']
+
     def __init__(self, et_range, eta_range, et_idx, eta_idx,
                  et_inclusive, eta_inclusive, et_key, eta_key):
         self.et_range = et_range
@@ -32,6 +35,38 @@ class EtEtaRegion(object):
                            inclusive=self.eta_inclusive)
         region_filter = et_filter & eta_filter
         return region_filter
+
+    def get_et_str(self):
+        if self.et_inclusive in self.__GEQ_INCLUSIVES:
+            left_sign = '<='
+        else:
+            left_sign = '<'
+
+        if self.et_inclusive in self.__LEQ_INCLUSIVES:
+            right_sign = '<='
+        else:
+            right_sign = '<'
+
+        left_limit, right_limit = self.et_range
+        et_str = f'{left_limit} {left_sign} E_T {right_sign} {right_limit}'
+
+        return et_str
+
+    def get_eta_str(self):
+        if self.eta_inclusive in self.__GEQ_INCLUSIVES:
+            left_sign = '<='
+        else:
+            left_sign = '<'
+
+        if self.eta_inclusive in self.__LEQ_INCLUSIVES:
+            right_sign = '<='
+        else:
+            right_sign = '<'
+
+        left_limit, right_limit = self.eta_range
+        eta_str = f'{left_limit} {left_sign} E_T {right_sign} {right_limit}'
+
+        return eta_str
 
 
 def get_et_eta_regions(et_bins, eta_bins,
@@ -63,7 +98,7 @@ def get_named_et_eta_regions(region_name: str):
     return et_eta_regions, n_et_bins, n_eta_bins
 
 
-def get_et_eta_region_sample_count(
+def count_region_samples(
     data_df: pd.DataFrame,
     et_eta_regions: Iterable[EtEtaRegion]
         ) -> List[int]:
