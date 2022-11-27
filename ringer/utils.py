@@ -99,8 +99,27 @@ def get_number_order(num: Number) -> np.integer:
 
 
 def significant_around(val: Number,
-                      err: Number) -> Tuple[np.floating, np.floating]:
+                       err: Number) -> Tuple[np.floating, np.floating]:
     err_order = get_number_order(err)
     val_arounded = np.around(val, -err_order)  # type: ignore
     err_arounded = np.around(err, -err_order)  # type: ignore
     return val_arounded, err_arounded
+
+
+def confidence_interval_str(val: Number, err: Number,
+                            latex: bool = False, max_precision=5) -> str:
+    rtol = 10**(-max_precision)
+    if np.isclose(err, 0, rtol=rtol):
+        repr_str = f'{val:.{max_precision}f}'
+        return repr_str
+
+    calc_precision = int(-get_number_order(err))  # type: ignore
+    if calc_precision < max_precision:
+        precision = calc_precision
+    else:
+        precision = calc_precision
+    pm = '\\pm' if latex else '+-'
+    repr_str = f'{val:.{precision}f} {pm} {err:.{precision}f}'
+    if latex:
+        repr_str = f'${repr_str}$'
+    return repr_str

@@ -11,16 +11,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import mplhep as hep
 from ringer.constants import DEFAULT_FIGSIZE, DEFAULT_DPI
-plt.style.use(hep.style.ATLAS)
-plt.rc('legend',fontsize='large')
-plt.rc('axes',labelsize='x-large')
-plt.rc('text',usetex='false')
-plt.rc('xtick', labelsize='large')
-plt.rc('figure', figsize=DEFAULT_FIGSIZE)
-plt.rc('figure', dpi=DEFAULT_DPI)
 from ringer.plotting import euclidean_triangle_plot
 from ringer.data import load_var_infos
 from ringer.constants import LOGGING_CONFIG
+plt.style.use(hep.style.ATLAS)
+plt.rc('legend', fontsize='large')
+plt.rc('axes', labelsize='x-large')
+plt.rc('text', usetex='false')
+plt.rc('xtick', labelsize='large')
+plt.rc('figure', figsize=DEFAULT_FIGSIZE)
+plt.rc('figure', dpi=DEFAULT_DPI)
 
 logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger('ringer_debug')
@@ -66,7 +66,7 @@ def plot_variables(vars_to_plot: Iterable[str], description_name: str,
             title=f'{var_infos.loc[var_name, "label"]} Wasserstein Mapping',
             plot_references=True,
             legend=True,
-            legend_kwargs={} if var_name != 'f1' else dict(loc=2),
+            legend_kwargs=var_legend_kwargs[var_name],
             text_kwargs=dict(
                 x=text_positions[var_name][0],
                 y=text_positions[var_name][1],
@@ -78,6 +78,7 @@ def plot_variables(vars_to_plot: Iterable[str], description_name: str,
                           alpha=0)
             )
         )
+        fig.tight_layout()
         figpath = os.path.join(
                 output_dir,
                 f'{var_name}_{description_name}_mapping.png')
@@ -97,6 +98,17 @@ text_positions = dict(
     rhad=(0.15, 0.87),
     rhad1=(0.15, 0.87),
     rphi=(0.4, 0.87)
+)
+var_legend_kwargs = dict(
+    reta=dict(),
+    eratio=dict(),
+    f1=dict(loc=2),
+    f3=dict(),
+    wstot=dict(),
+    weta2=dict(),
+    rhad=dict(fontsize='medium'),
+    rhad1=dict(),
+    rphi=dict()
 )
 output_dir = os.path.join('analysis', 'euclidean_wasserstein_mapping')
 if not os.path.exists(output_dir):
