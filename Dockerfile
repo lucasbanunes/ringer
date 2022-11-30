@@ -1,4 +1,4 @@
-FROM python:3.8.14
+FROM nvcr.io/nvidia/tensorflow:22.11-tf2-py3
 
 # Exposing jupyter port
 EXPOSE 8888
