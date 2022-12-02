@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime
 from itertools import product
-from typing import Dict, Iterable, Union, Tuple
+from typing import Dict, Iterable, Union, Tuple, Any
 from numbers import Number
 
 import numpy as np
@@ -123,3 +123,27 @@ def confidence_interval_str(val: Number, err: Number,
     if latex:
         repr_str = f'${repr_str}$'
     return repr_str
+
+
+def get_instance_from_dict(config_dict: Dict[str, str]) -> Any:
+
+    splitted_name = config_dict['class_name'].split('.')
+    module_name = splitted_name[0]
+    attr_name_list = splitted_name[1:]
+    module = __import__(module_name)
+    attr = module
+    for attr_name in attr_name_list:
+        attr = getattr(attr, attr_name)
+
+    attr_instance = attr(
+        *config_dict['args'],
+        **config_dict['kwargs']
+    )
+
+    return attr_instance
+
+
+def is_instance(obj: Any, class_: Any, var_name: str) -> None:
+
+    if not isinstance(obj, class_):
+        raise TypeError(f'{var_name} must be of type {class_.__name__}')
