@@ -16,7 +16,7 @@ class ModelFitJob(object):
         self.job_id = str(job_id)
         self.gpu = int(gpu)
         self.logger_name = str(logger_name)
-        self.logger_extra = {
+        self.extra = {
             'job_id': self.job_id,
             'gpu': self.gpu,
             'logger_name': self.logger_name
@@ -26,7 +26,7 @@ class ModelFitJob(object):
         job_logger = logging.getLogger(self.logger_name)
         job_logger.info(
             'Job fit start',
-            logger_extra=self.logger_extra
+            extra=self.extra
         )
         try:
             if self.gpu is None:
@@ -38,13 +38,13 @@ class ModelFitJob(object):
         except Exception as e:
             job_logger.exception(
                 'An exception occured during the job fit',
-                logger_extra=self.logger_extra
+                extra=self.extra
             )
             raise e
 
         job_logger.info(
             'Job fit ended succesfully',
-            logger_extra=self.logger_extra
+            extra=self.extra
         )
 
         return self.model
