@@ -1,5 +1,6 @@
 import pandas as pd
-from typing import Any, Tuple, Iterable
+from typing import Any, Generator
+
 
 class ColumnKFold(object):
     """
@@ -17,7 +18,7 @@ class ColumnKFold(object):
     sequential_col_name: str
         Name of the column that has a unique non-negative integer for each
         sample sequentially.
-    
+
     Attributes
     ----------
     n_folds: int
@@ -26,10 +27,21 @@ class ColumnKFold(object):
     def __init__(self, n_folds: int, sequential_col_name: str):
         self.n_folds = int(n_folds)
         self.sequential_col_name = str(sequential_col_name)
-    
-    def split(self, X:pd.DataFrame, y:Any=None):
+
+    def split(self, X: pd.DataFrame,
+              y: Any = None) -> Generator:
         fold_ids = X[self.sequential_col_name] % self.n_folds
         for test_fold in range(self.n_folds):
             test_idx = fold_ids == test_fold
             train_idx = ~test_idx
             yield test_idx, train_idx
+
+    def get_train_idx(self, X: pd.DataFrame, fold_num: int):
+        fold_ids = X[self.sequential_col_name] % self.n_folds
+        train_idxs = fold_ids != fold_num
+        return train_idxs
+
+    def get_test_idx(self, X: pd.DataFrame, fold_num: int):
+        fold_ids = X[self.sequential_col_name] % self.n_folds
+        test_idxs = fold_ids == fold_num
+        return test_idxs
