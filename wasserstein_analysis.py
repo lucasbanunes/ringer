@@ -2,15 +2,14 @@ import os
 import logging
 import logging.config
 import pandas as pd
-from scipy.stats import wasserstein_distance
-from itertools import combinations, product
+from itertools import product
 from ringer.constants import LOGGING_CONFIG
 from ringer.data import NamedDatasetLoader, load_var_infos
 from ringer.crossval import ColumnKFold
 from ringer.utils import medium_keys_mapping
 from ringer.scalers import MinMaxScaler
 from ringer.infgeometry import wasserstein_distance
-from typing import Mapping, Callable
+from collections import defaultdict
 
 logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger('ringer_debug')
@@ -19,7 +18,7 @@ FOLD_TYPES = ['train', 'test']
 # Arguments
 n_folds = 10
 sequential_col_name = 'region_id'
-out_filepath = os.path.join('..', '..', 'data', 'wass_distances.csv')
+output_dir = os.path.join('..', '..', 'data')
 test = True
 
 
@@ -35,9 +34,35 @@ def get_shower_shapes_to_analyze(var_infos: pd.DataFrame) -> pd.Series:
     return ss_to_analyze
 
 
+def build_data_values_from_scaler(scaler: MinMaxScaler,
+                                  ifold: int, fold_type: str
+                                  ) -> pd.DataFrame:
+    frmt_min_values = scaler.min_values_ \
+        .reset_index(names='description') \
+        .melt(id_vars='description', var_name='cols')
+    frmt_min_values['description'] += f'_fold_{ifold}_{fold_type}'
+    frmt_min_values['name'] = 'min'
+
+    frmt_max_values = scaler.max_values_ \
+        .reset_index(names='description') \
+        .melt(id_vars='description', var_name='cols')
+    frmt_max_values['description'] += f'_fold_{ifold}_{fold_type}'
+    frmt_max_values['name'] = 'max'
+
+    data_values = pd.concat([frmt_min_values, frmt_max_values], axis=0)
+    correct_ordering = [
+        'name', 'cols', 'value', 'description'
+    ]
+    data_values = data_values[correct_ordering]
+
+    return data_values
+
+
 logger.info('Loading var_infos and getting shower shapes to analyze')
 var_infos = load_var_infos()
 ss_to_analyze = get_shower_shapes_to_analyze(var_infos)
+if test:
+    ss_to_analyze = ss_to_analyze.iloc[:3]
 load_cols = ss_to_analyze.to_list() + ['region_id', 'id']
 logger.info('Reading MC16 Boosted data')
 boosted_data = NamedDatasetLoader('mc16_boosted', test) \
@@ -74,11 +99,13 @@ collision_fold_idxs = {
 }
 boosted_split = cross_val.split(boosted_data)
 all_wass_distances = list()
+all_data_values = list()
+scalers = defaultdict(dict)
 
 for var_name, var_col in ss_to_analyze.items():
     for ifold, fold_type in product(range(n_folds), FOLD_TYPES):
         logger.info("Computing distances "
-                    f"for {var_name} in fold {fold_type} {ifold}")
+                    f"for {var_name} in fold {ifold} {fold_type}")
 
         if fold_type == 'train':
             boosted_fold = cross_val.get_train_idx(boosted_data, ifold)
@@ -98,6 +125,10 @@ for var_name, var_col in ss_to_analyze.items():
         }
         if fold_type == 'train':
             scaler = MinMaxScaler().fit(fold_data)
+            data_values = build_data_values_from_scaler(
+                scaler, ifold, fold_type
+            )
+            all_data_values.append(data_values)
             scaled_data = scaler.transform(fold_data)
         else:
             scaled_data = scaler.transform(fold_data)
@@ -108,22 +139,12 @@ for var_name, var_col in ss_to_analyze.items():
 
     del fold_data
 
-# logger.info('Computing distances for all the data')
-# complete_data = {
-#     'boosted': boosted_data,
-#     'el': collision_data.loc[el_label],
-#     'jet': collision_data.loc[jet_label]
-# }
-# scaler = MinMaxScaler().fit(complete_data)
-# scaled_data = scaler.transform(complete_data)
-# wass_distances = get_wasserstein_distances(
-#         complete_data,
-#         ss_filters,
-#         description='complete',
-#         ss_to_analyze=ss_to_analyze
-# )
+
 logger.info('Computed all')
-# all_wass_distances.append(wass_distances)
 all_wass_distances_df = pd.concat(all_wass_distances, axis=0)
 all_wass_distances_df = all_wass_distances_df.reset_index()
-all_wass_distances_df.to_csv(out_filepath)
+all_wass_distances_df.to_csv(os.path.join(output_dir, 'wass_distances.csv'))
+
+all_data_values_df = pd.concat(all_data_values, axis=0)
+all_data_values_df = all_data_values_df.reset_index()
+all_data_values_df.to_csv(os.path.join(output_dir, 'data_values.csv'))
