@@ -2,10 +2,12 @@ import os
 import numpy as np
 from collections import OrderedDict
 
-VAR_INFOS_DTYPES = dict(
-    name='str', label='str', tyoe='category', lower_lim='float', upper_lim='float', 
-    l2calo='str', offline='str', TaP='str', description='str'
-)
+VAR_INFOS_DTYPES = {
+    "name": "str",
+    "label": "str",
+    "type": "category",
+    "description": "str"
+}
 VAR_INFOS_PATH = os.path.join(
         'data', 
         'var_infos.csv'

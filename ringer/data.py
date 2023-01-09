@@ -34,7 +34,6 @@ def load_var_infos(var_infos_path:Union[str, None]=None):
         var_infos_path = VAR_INFOS_PATH
     var_infos = pd.read_csv(var_infos_path,
                             index_col=0, dtype=VAR_INFOS_DTYPES)
-    var_infos = var_infos.set_index('name')
     return var_infos
 
 def get_electron_label(data: pd.DataFrame, criterion: str):
