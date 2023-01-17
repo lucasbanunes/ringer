@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 import pandas as pd
 from .utils import get_number_order
 
@@ -7,7 +7,16 @@ def confidence_region_as_latex(central: float, err: float) -> str:
     repr_str = f'${central:.{precision}f} \\pm {err:.{precision}f}$'
     return repr_str
 
-def mean_rms_confidence_region(data: Any, rms_factor: float = 1.) -> str:
+
+def mean_rms_confidence_region(data: pd.Series) -> Tuple[str, str]:
+    mean = data.mean()
+    rms_err = data.std()
+    precision = int(-get_number_order(err))
+    mean_str = f"{central:.{precision}f}"
+    rms_str = f"{err:.{precision}f}"
+    return mean_str, rms_str
+
+def mean_rms_confidence_region_str(data: Any, rms_factor: float = 1.,) -> str:
     mean = data.mean()
     rms_err = data.std()
     repr_str = confidence_region_as_latex(mean, rms_factor*rms_err)
@@ -20,10 +29,10 @@ def confidence_region_df_as_latex(data: pd.DataFrame,
     if groupby:
         confidence_df = data \
             .groupby(groupby) \
-            .agg(mean_rms_confidence_region)
+            .agg(mean_rms_confidence_region_str)
     else:
         confidence_df = data \
-            .apply(mean_rms_confidence_region, axis=0) \
+            .apply(mean_rms_confidence_region_str, axis=0) \
             .to_frame()
     
     if sort_values:
