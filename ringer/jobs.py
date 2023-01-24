@@ -1,53 +1,83 @@
-import logging
-from typing import Union
+from typing import Dict, Any
+from sklearn.base import TransformerMixin
 
 
-class ModelFitJob(object):
+class NNFitJob():
+    """
+    Represents a neural net fit job. It implements caching in a way that a job
+    initialized with the same parameters poining to the same output_dir
+    restarts a job where the last one failed.
+    Attributes
+    ----------
+    job_id : str
+        job's guid
+    dataset : str
+        path to the dataset to be loaded
+    model_config : str
+        json string returned by keras.Model.to_json
+    inital_weights : str
+        path to the file containg the initial training weights
+        for reproductibility
+    compile_kwargs : Dict[str, Any]
+        Dict with the model compile kwargs
+    fit_kwargs : Dict[str, Any]
+        Dict with the model fit kwargs with exception of the validation
+        and training data
+    preprocessing_pipeline : TransformerMixin
+        A transformer according to the scikit learn rules
+        IT IS NOT FITTED DURING THE JOB
+    output_dir: str
+        Directory path to dump job results
+    logger_name: str
+        logging.Logger name instance to log the results
+    gpu: str
+        GPU id in which the job will run
+    """
 
     def __init__(
         self,
-        model,
         job_id: str,
-        gpu: Union[int, None],
-        logger_name: str
+        dataset: str,
+        model_config: str,
+        inital_weights: str,
+        compile_kwargs: Dict[str, Any],
+        fit_kwargs: Dict[str, Any],
+        preprocessing_pipeline: TransformerMixin,
+        output_dir: str,
+        logger_name: str,
+        gpu: str
     ):
+        """
+        Parameters
+        ----------
+        job_id : str
+            job's guid
+        dataset : str
+            path to the dataset to be loaded
+        model_config : str
+            json string returned by keras.Model.to_json
+        inital_weights : str
+            path to the file containg the initial training weights
+            for reproductibility
+        compile_kwargs : Dict[str, Any]
+            Dict with the model compile kwargs
+        fit_kwargs : Dict[str, Any]
+            Dict with the model fit kwargs with exception of the validation
+            and training data
+        preprocessing_pipeline : TransformerMixin
+            A transformer according to the scikit learn rules
+            IT IS NOT FITTED DURING THE JOB
+        output_dir: str
+            Directory path to dump job results
+        logger_name: str
+            logging.Logger name instance to log the results
+        gpu: str
+            GPU id in which the job will run
+        """
+        raise NotImplementedError
 
-        self.model = model
-        self.job_id = str(job_id)
-        self.gpu = int(gpu)
-        self.logger_name = str(logger_name)
-        self.extra = {
-            'job_id': self.job_id,
-            'gpu': self.gpu,
-            'logger_name': self.logger_name
-        }
-
-    def run(self, X, y):
-        job_logger = logging.getLogger(self.logger_name)
-        job_logger.info(
-            'Job fit start',
-            extra=self.extra
-        )
-        try:
-            if self.gpu is None:
-                self.model.fit(X, y)
-            else:
-                import tensorflow as tf
-                with tf.device(f'/gpu:{self.gpu}'):
-                    self.model.fit(X, y)
-        except Exception as e:
-            job_logger.exception(
-                'An exception occured during the job fit',
-                extra=self.extra
-            )
-            raise e
-
-        job_logger.info(
-            'Job fit ended succesfully',
-            extra=self.extra
-        )
-
-        return self.model
-
-    def dump(self):
+    def run(self):
+        """
+        Runs the fitting job
+        """
         raise NotImplementedError
