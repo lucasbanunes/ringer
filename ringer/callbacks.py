@@ -2,7 +2,7 @@ import logging
 from tensorflow import keras
 
 
-class ExecutionLogger(keras.callbacks.Callback):
+class LoggerCallback(keras.callbacks.Callback):
 
     def __init__(self, logger_name: str, **kwargs):
 
@@ -12,8 +12,9 @@ class ExecutionLogger(keras.callbacks.Callback):
 
     def get_logger_extra(self, logs: dict):
         logs['model-name'] = self.model.name
-        for key, value in self.kwargs.items():
-            logs[key] = value
+        if self.kwargs:
+            for key, value in self.kwargs.items():
+                logs[key] = value
         return logs
 
     def on_train_begin(self, logs=None):
