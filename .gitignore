@@ -145,3 +145,4 @@ analysis/
 *.snm
 *.toc
 *.tex
+tests/test_data/job_outputs/**
