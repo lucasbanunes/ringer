@@ -7,8 +7,20 @@ from sklearn.preprocessing import StandardScaler
 
 sys.path.append(os.path.abspath(".."))
 from ringer.jobs import NNFitJob
-# from ringer.logging import set_loggers
-# set_loggers()
+
+
+def build_fn():
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.Flatten(input_shape=(30,)),
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(1, activation="sigmoid")
+    ])
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(0.001),
+        loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+        metrics=[],
+    )
+    return model
 
 
 dataset_path = os.path.join("test_data", "breast_cancer_dataset.parquet")
@@ -41,8 +53,8 @@ if os.path.exists(output_dir):
 fit_job = NNFitJob(
     job_id="0",
     dataset_info=dataset_dict,
-    model_config=model_config_path,
-    compile_kwargs=compile_kwargs,
+    build_fn=build_fn,
+    build_fn_kwargs={},
     fit_kwargs=fit_kwargs,
     preprocessing_pipeline=StandardScaler(),
     fit_pipeline=True,
