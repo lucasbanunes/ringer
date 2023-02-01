@@ -6,7 +6,7 @@ import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 
 sys.path.append(os.path.abspath(".."))
-from ringer.jobs import NNFitJob
+from ringer.jobs import KFoldNNFitJob
 # from ringer.logging import set_loggers
 # set_loggers()
 
@@ -34,22 +34,21 @@ dataset_dict = {
     "target_names": ["target"]
 }
 
-output_dir = os.path.join("test_data", "job_outputs")
+output_dir = os.path.join("test_data", "job_outputs", "kfold_job_test")
 if os.path.exists(output_dir):
     shutil.rmtree(output_dir)
 
-fit_job = NNFitJob(
-    job_id="0",
+fit_job = KFoldNNFitJob(
     dataset_info=dataset_dict,
     model_config=model_config_path,
     compile_kwargs=compile_kwargs,
     fit_kwargs=fit_kwargs,
     preprocessing_pipeline=StandardScaler(),
     fit_pipeline=True,
-    n_folds=10,
-    fold=0,
+    n_folds=2,
     fold_col_name="fold_id",
-    output_dir=output_dir
+    n_inits=2,
+    output_dir=output_dir,
+    n_jobs=4
 )
-res = fit_job.run()
-print("Finished")
+fit_job.run()
