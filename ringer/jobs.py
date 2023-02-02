@@ -15,22 +15,29 @@ from .callbacks import LoggerCallback
 
 
 END_WORKER = "end"
+FINISHED_FILEPATH = os.path.join("{job_dir}", "finished.txt")
 
 
 class BaseFitJob(ABC):
 
     def __init__(self,
                  job_id: str,
-                 logger_name: str):
+                 output_dir: str):
         self.job_id = job_id
-        if logger_name:
-            self.logger_name = logger_name
-        else:
-            self.logger_name = f"jobLogger-{self.job_id}"
+        self.output_dir = output_dir
+        self.job_dir = os.path.join(output_dir, job_id)
+        self.create_job_dir()
+        self.logger_name = f"jobLogger-{self.job_id}"
+        self.set_logger()
 
     @abstractmethod
     def run(self):
         raise NotImplementedError
+
+    def create_job_dir(self):
+        """Creates job_dir"""
+        if not os.path.exists(self.job_dir):
+            os.makedirs(self.job_dir)
 
     def set_logger(self):
         """
@@ -44,10 +51,11 @@ class BaseFitJob(ABC):
                  "%(lineno)d;"
                  "%(relativeCreated)d;"
                  "%(message)s"))
-
+        filename = os.path.join(self.job_dir, "log.csv")
+        mode = "a" if os.path.exists(filename) else "w"
         csv_handler = logging.FileHandler(
-            filename=os.path.join(self.job_dir, "log.csv"),
-            mode="w"
+            filename=filename,
+            mode=mode
         )
         csv_handler.setFormatter(csv_formatter)
         logger = logging.getLogger(self.logger_name)
@@ -59,10 +67,13 @@ class BaseFitJob(ABC):
         """Returns LoggerAdapter instance with job parameters as extra"""
         logger_extra = dict(jobId=self.job_id)
         logger = logging.getLogger(self.logger_name)
-        if len(logger.handlers) == 0:
-            logger = self.set_logger()
         adapted_logger = logging.LoggerAdapter(logger, logger_extra)
         return adapted_logger
+
+    def register_finish(self):
+        finish_file_path = FINISHED_FILEPATH.format(job_dir=self.job_dir)
+        with open(finish_file_path, "w"):
+            pass
 
 
 class NNFitJob(BaseFitJob):
@@ -102,10 +113,6 @@ class NNFitJob(BaseFitJob):
         Job output_dir
         The job creates inside the output_dir a directory with its id
         and dumps data there_
-    logger_name : str, optional
-        name of logging.Logger to be used, by default None.
-        When default creates a log.csv file inside the job_dir with
-        execution logs
     gpu : str, optional
         GPU to run the job, by default "0". Not supported yet
     """
@@ -123,7 +130,6 @@ class NNFitJob(BaseFitJob):
         fold: int,
         fold_col_name: str,
         output_dir: str,
-        logger_name: str = None,
         gpu: str = "0",
         **kwargs
     ):
@@ -160,16 +166,12 @@ class NNFitJob(BaseFitJob):
             Job output_dir
             The job creates inside the output_dir a directory with its id
             and dumps data there
-        logger_name : str, optional
-            name of logging.Logger to be used, by default None.
-            When default creates a log.csv file inside the job_dir with
-            execution logs
         gpu : str, optional
             GPU to run the job, by default "0". Not supported yet
         kwargs:
             Any other attribute to be assigned to the job
         """
-        super().__init__(job_id, logger_name)
+        super().__init__(job_id, output_dir)
         self.dataset_info = dataset_info
         self.n_folds = n_folds
         self.fold = fold
@@ -179,8 +181,6 @@ class NNFitJob(BaseFitJob):
         self.fit_kwargs = fit_kwargs
         self.preprocessing_pipeline = preprocessing_pipeline
         self.fit_pipeline = fit_pipeline
-        self.output_dir = output_dir
-        self.job_dir = os.path.join(output_dir, job_id)
         self.gpu = gpu
         self.kwargs = kwargs
         for attr_name, attr_value in kwargs.items():
@@ -198,7 +198,6 @@ class NNFitJob(BaseFitJob):
             List of target names in order
         """
         try:
-            self.create_job_dir()
             logger = self.get_logger()
             logger.info("Starting job")
             self.dump_inital_params()
@@ -367,6 +366,7 @@ class NNFitJob(BaseFitJob):
             It is dumped as a csv file called history.csv
         """
         self.dump_history_callback(history)
+        self.register_finish()
 
     def load_inital_model(self):
         """
@@ -432,11 +432,6 @@ class NNFitJob(BaseFitJob):
         history_df["epoch"] = np.arange(1, len(history_df)+1)
         history_df.to_csv(history_filepath, index=False)
 
-    def create_job_dir(self):
-        """Creates job_dir"""
-        if not os.path.exists(self.job_dir):
-            os.makedirs(self.job_dir)
-
     @classmethod
     def from_config(cls):
         """
@@ -492,8 +487,6 @@ class KFoldNNFitJob(BaseFitJob):
         output_dir
     n_jobs : int
         Number of jobs to paralelize
-    logger_name : str, optional
-        _description_, by default None
     kwargs:
         Any other attribute to be assigned to the job
     """
@@ -512,7 +505,6 @@ class KFoldNNFitJob(BaseFitJob):
         n_inits: int,
         output_dir: str,
         n_jobs: int,
-        logger_name: str = None,
         **kwargs
     ):
         """
@@ -550,12 +542,10 @@ class KFoldNNFitJob(BaseFitJob):
             and dumps data there
         n_jobs : int
             Number of jobs to paralelize
-        logger_name : str, optional
-            _description_, by default None
         kwargs:
             Any other attribute to be assigned to the job
         """
-        super().__init__(job_id, logger_name)
+        super().__init__(job_id, output_dir)
         self.dataset_info = dataset_info
         self.build_fn = build_fn
         self.build_fn_kwargs = build_fn_kwargs
@@ -565,17 +555,10 @@ class KFoldNNFitJob(BaseFitJob):
         self.n_folds = n_folds
         self.fold_col_name = fold_col_name
         self.n_inits = n_inits
-        self.output_dir = output_dir
-        self.job_dir = os.path.join(output_dir, self.job_id)
         self.n_jobs = n_jobs
         self.kwargs = kwargs
         for attr_name, attr_value in kwargs.items():
             setattr(self, attr_name, attr_value)
-
-    def create_job_dir(self):
-        """Creates job_dir"""
-        if not os.path.exists(self.job_dir):
-            os.makedirs(self.job_dir)
 
     def run(self) -> List[Tuple[str, int]]:
         """
@@ -586,18 +569,22 @@ class KFoldNNFitJob(BaseFitJob):
         List[Tuple[str, int]]
             List with the return of each NNFitJob
         """
-        self.create_job_dir()
-        logger = self.get_logger()
-        logger.info("Starting job")
-        with Manager() as manager:
-            param_queue = manager.Queue()
-            self.fill_queue(param_queue)
-            worker_params_list = self.get_worker_params(param_queue)
-            p = Pool(self.n_jobs)
-            results = p.starmap(call_job_on_gpu_config, worker_params_list)
-        final_results = sum(results, list())
-        logger.info("Finished")
-        return final_results
+        try:
+            logger = self.get_logger()
+            logger.info("Starting job")
+            with Manager() as manager:
+                param_queue = manager.Queue()
+                self.fill_queue(param_queue)
+                worker_params_list = self.get_worker_params(param_queue)
+                p = Pool(self.n_jobs)
+                results = p.starmap(call_job_on_gpu_config, worker_params_list)
+            final_results = sum(results, list())
+            self.register_finish()
+            logger.info("Finished")
+            return final_results
+        except Exception as e:
+            logger.exception("An error occured")
+            raise e
 
     def fill_queue(self, q: Queue):
         """
@@ -608,10 +595,18 @@ class KFoldNNFitJob(BaseFitJob):
         q : Queue
             Queue to accumulate the args
         """
+        logger = self.get_logger()
         inits_folds = product(range(self.n_inits), range(self.n_folds))
         for init, fold in inits_folds:
+
+            fit_job_id = f"fold{fold}_init{init}"
+            fit_job_dir = os.path.join(self.job_dir, fit_job_id)
+            if job_is_finished(fit_job_dir):
+                logger.info(f"Jumping {fit_job_id}")
+                continue
+
             param_dict = dict(
-                    job_id=f"fold{fold}_init{init}",
+                    job_id=fit_job_id,
                     dataset_info=self.dataset_info,
                     build_fn=self.build_fn,
                     build_fn_kwargs=self.build_fn_kwargs,
@@ -669,3 +664,22 @@ def call_job_on_gpu_config(q: Queue, gpu_config: Any = None):
         results.append(res)
 
     return results
+
+
+def job_is_finished(job_dir: str) -> bool:
+    """
+    Returns True if a job has finished
+
+    Parameters
+    ----------
+    job_dir : str
+        Path to the job_dir
+
+    Returns
+    -------
+    bool
+        True if job has finished
+    """
+    finish_file_path = FINISHED_FILEPATH.format(job_dir=job_dir)
+    is_finished = os.path.exists(finish_file_path)
+    return is_finished
