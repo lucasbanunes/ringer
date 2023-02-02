@@ -26,7 +26,11 @@ class LoggerCallback(keras.callbacks.Callback):
                          extra=self.get_logger_extra(logs))
 
     def on_epoch_begin(self, epoch, logs=None):
-        self.logger.info(f'Epoch {epoch+1}',
+        self.logger.info(f'Started Epoch {epoch+1}',
+                         extra=self.get_logger_extra(logs))
+
+    def on_epoch_end(self, epoch, logs=None):
+        self.logger.info(f'Finished Epoch {epoch+1} {logs}',
                          extra=self.get_logger_extra(logs))
 
     def on_predict_begin(self, logs=None):
@@ -34,5 +38,5 @@ class LoggerCallback(keras.callbacks.Callback):
                          extra=self.get_logger_extra(logs))
 
     def on_predict_end(self, logs=None):
-        self.logger.info('Ended predicting',
+        self.logger.info(f'Ended predicting',
                          extra=self.get_logger_extra(logs))

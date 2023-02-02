@@ -46,7 +46,7 @@ class BaseFitJob(ABC):
         csv_formatter = logging.Formatter(
             fmt=("%(asctime)s;"
                  "%(levelname)s;"
-                 "%(jobId)s"
+                 "%(jobId)s;"
                  "%(funcName)s;"
                  "%(lineno)d;"
                  "%(relativeCreated)d;"
