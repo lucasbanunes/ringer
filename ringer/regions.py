@@ -22,9 +22,9 @@ class EtEtaRegion(object):
 
     def __repr__(self):
         rep = f'EtEtaRegion(et_range={self.et_range}'
-        rep += ', eta_range={self.eta_range}'
+        rep += f', eta_range={self.eta_range}'
         rep += f', et_inclusive={self.et_inclusive}'
-        rep += ', eta_inclusive={self.eta_inclusive})'
+        rep += f', eta_inclusive={self.eta_inclusive})'
         return rep
 
     def get_filter(self, data: pd.DataFrame):
