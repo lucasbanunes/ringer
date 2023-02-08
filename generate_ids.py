@@ -47,8 +47,11 @@ et_eta_regions, n_ets, n_etas = get_named_et_eta_regions(region_name)
 
 #Reading data and generting folds
 splitted_data = list()
+range_start = 0
+data_df = None
 for region in et_eta_regions:
     logger.info(f'Processing (et_idx, eta_idx) {(region.et_idx, region.eta_idx)}')
+    del data_df
     data_df = load_data_with_func(filepath.format(et=region.et_idx, eta=region.eta_idx), load_func)
     if data_df.empty:
         raise ValueError('The data is empty')
@@ -71,23 +74,14 @@ for region in et_eta_regions:
     
     if data_df['region_id'].isnull().any():
         raise RuntimeError('Region id has nan values')
-      
-    splitted_data.append(data_df)
-
-logger.info('Concatenating')
-data_df = pd.concat(splitted_data, axis=0, ignore_index=True)
-data_df['id'] = np.arange(len(data_df), dtype='uint64')
-data_df['id'] = data_df['id'].astype('uint64')
-
-# Saving each region
-for region in et_eta_regions:
+        
+    data_df["id"] = np.arange(range_start, range_start+len(data_df))
+    range_start += len(data_df)
     logger.info(f'Saving (et_idx, eta_idx) {(region.et_idx, region.eta_idx)}')
-    save_df = data_df.loc[region.get_filter(data_df)]
-    if save_df.empty:
+    if data_df.empty:
         raise ValueError('The save_df is empty')
-    save_df.to_parquet(out_filepath.format(et=region.et_idx, eta=region.eta_idx))
+    data_df.to_parquet(out_filepath.format(et=region.et_idx, eta=region.eta_idx))
 
-# Export schema
 logger.info('Exporting schema')
 dataset_dir, table_name = os.path.split(out_datapath)
 table_name = table_name.replace('.parquet', '')
