@@ -10,6 +10,7 @@ from ringer.utils import medium_keys_mapping
 from ringer.scalers import MinMaxScaler
 from ringer.infgeometry import wasserstein_distance
 from collections import defaultdict
+from datetime import datetime
 
 logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger('ringer_debug')
@@ -18,19 +19,27 @@ FOLD_TYPES = ['train', 'test']
 # Arguments
 n_folds = 10
 sequential_col_name = 'region_id'
-output_dir = os.path.join('..', '..', 'data')
-test = True
+script_datetime = datetime.now()
+script_time_str = script_datetime.strftime("%Y_%m_%d_%H_%M_%S")
+output_dir = os.path.join('..', '..', 'data', f"{script_time_str}_wasserstein_analysis")
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+test = False
+vars2analyze = [
+    "trig_L2_cl_reta",
+    "trig_L2_cl_eratio",
+    "trig_L2_cl_f1",
+    "trig_L2_cl_f3",
+    "trig_L2_cl_wstot",
+    "trig_L2_cl_weta2",
+    "el_rhad",
+    "el_rhad1",
+    "el_rphi"
+]
 
 
-def get_shower_shapes_to_analyze(var_infos: pd.DataFrame) -> pd.Series:
-    is_ss = var_infos['type'] == 'shower_shape'
-    ss_to_analyze = [
-        var_infos.loc[is_ss & (~var_infos['l2calo'].isnull()), 'l2calo']
-        .rename('col'),
-        var_infos.loc[is_ss & (var_infos['l2calo'].isnull()), 'offline']
-        .rename('col')
-    ]
-    ss_to_analyze = pd.concat(ss_to_analyze)
+def get_shower_shapes_to_analyze(var_infos: pd.DataFrame, vars2analyze) -> pd.Series:
+    ss_to_analyze = var_infos.loc[vars2analyze, "name"]
     return ss_to_analyze
 
 
@@ -60,17 +69,18 @@ def build_data_values_from_scaler(scaler: MinMaxScaler,
 
 logger.info('Loading var_infos and getting shower shapes to analyze')
 var_infos = load_var_infos()
-ss_to_analyze = get_shower_shapes_to_analyze(var_infos)
-if test:
-    ss_to_analyze = ss_to_analyze.iloc[:3]
-load_cols = ss_to_analyze.to_list() + ['region_id', 'id']
+# ss_to_analyze = get_shower_shapes_to_analyze(var_infos, vars2analyze)
+# logger.debug(f"ss_to_analyze: {ss_to_analyze}")
+load_cols = vars2analyze + ['region_id', 'id']
 logger.info('Reading MC16 Boosted data')
+logger.debug(f"Load cols: {load_cols}")
 boosted_data = NamedDatasetLoader('mc16_boosted', test) \
     .load_data_df(columns=load_cols)
 
 logger.info('Reading 2017 Medium data')
 medium_col_mapping = medium_keys_mapping(load_cols)
 medium_col_mapping['target'] = 'target'
+logger.debug(f"Load cols: {medium_col_mapping.keys()}")
 collision_data = NamedDatasetLoader('2017_medium', test) \
     .load_data_df(columns=list(medium_col_mapping.keys()))
 collision_data.rename(medium_col_mapping, axis=1, inplace=True)
@@ -81,15 +91,15 @@ logger.info('Loaded collision data')
 
 
 ss_filters = {
-    'f3': lambda x: x,
-    'weta2': lambda x: x[x < 98],
-    'reta': lambda x: x,
-    'wstot': lambda x: x[x != -9999],
-    'eratio': lambda x: x[x < 98],
-    'f1': lambda x: x,
-    'rphi': lambda x: x[x.between(-0.5, 1.5, inclusive='both')],
-    'rhad': lambda x: x,
-    'rhad1': lambda x: x
+    'trig_L2_cl_f3': lambda x: x,
+    'trig_L2_cl_weta2': lambda x: x[x < 98],
+    'trig_L2_cl_reta': lambda x: x,
+    'trig_L2_cl_wstot': lambda x: x[x != -9999],
+    'trig_L2_cl_eratio': lambda x: x[x < 98],
+    'trig_L2_cl_f1': lambda x: x,
+    'el_rphi': lambda x: x[x.between(-0.5, 1.5, inclusive='both')],
+    'el_rhad': lambda x: x,
+    'el_rhad1': lambda x: x
 }
 cross_val = ColumnKFold(n_folds=n_folds, sequential_col_name='region_id')
 collision_split = cross_val.split(collision_data)
@@ -102,7 +112,7 @@ all_wass_distances = list()
 all_data_values = list()
 scalers = defaultdict(dict)
 
-for var_name, var_col in ss_to_analyze.items():
+for var_name in vars2analyze:
     for ifold, fold_type in product(range(n_folds), FOLD_TYPES):
         logger.info("Computing distances "
                     f"for {var_name} in fold {ifold} {fold_type}")
@@ -119,9 +129,9 @@ for var_name, var_col in ss_to_analyze.items():
         jet_fold = collision_data.loc[collision_fold & jet_label]
         filter_func = ss_filters[var_name]
         fold_data = {
-            'boosted': filter_func(boosted_fold[var_col]).to_frame(),
-            'el': filter_func(el_fold[var_col]).to_frame(),
-            'jet': filter_func(jet_fold[var_col]).to_frame()
+            'boosted': filter_func(boosted_fold[var_name]).to_frame(),
+            'el': filter_func(el_fold[var_name]).to_frame(),
+            'jet': filter_func(jet_fold[var_name]).to_frame()
         }
         if fold_type == 'train':
             scaler = MinMaxScaler().fit(fold_data)

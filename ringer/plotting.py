@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import seaborn as sns
@@ -7,6 +8,9 @@ from typing import Union, Tuple
 
 from ringer.utils import euclidean_triangle_angle, confidence_interval_str
 
+def set_defaults():
+    mpl.rcParams["figure.figsize"] = (9,6.6)
+    mpl.rcParams["figure.dpi"] = 300
 
 # def joint_plot(data, x, y, et_cut=None, ylim=None, xlim=None,
 #                xlabel=None, ylabel=None, data_label=None, criterion=None,
