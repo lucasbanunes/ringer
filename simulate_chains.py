@@ -22,7 +22,7 @@ from argparse import ArgumentParser
 import json
 from Gaugi import GeV
 
-from packages.generators import ring_percentages, RingGenerator
+from packages.generators import ringer_generators
 from packages.plotting import make_plot_fig, var_infos, val_label_map
 from packages.utils import get_logger
 from packages.constants import DROP_COLS, L1SEEDS_PER_ENERGY, CRITERIA_CONF_NAMES, ENERGY_CHAINS, TRIG_STEPS
@@ -66,7 +66,7 @@ def simulate(datasetpath: str, modelpaths: List[str], cutbased: bool,
         ringer_name = f'ringer_{ringer_version}'
         strat_criterion = f'{ringer_name}_{criterion}'
         simulation_logger.info(f'Building decorator for {confpath}. Version: {ringer_version}')
-        decorator = RingerDecorator(strat_criterion, confpath, RingGenerator(ring_percentages[ringer_version]))
+        decorator = RingerDecorator(strat_criterion, confpath, ringer_generators[ringer_version])
         decorators.append(decorator)
         strategy_cols[ringer_name].append(strat_criterion)
         strategy_cols[ringer_name].append(strat_criterion + '_output')
