@@ -1,7 +1,12 @@
 import numpy as np
 import pandas as pd
 from collections import defaultdict
-from ringer.constants import RINGS_LAYERS, RING_COL_NAME, GENERATOR_CONFIGS
+from ringer.constants import RINGS_LAYERS, RING_COL_NAME, GENERATOR_CONFIGS, RINGS_PER_LAYERS
+from ringer.scalers import AbsSumScaler
+from ringer.selectors import SubGroupSelector
+
+ringer_generators = {
+}
 
 class RingGenerator(object):
     
@@ -83,6 +88,39 @@ def get_ringer_generator_by_version(ringer_version:str):
             raise ValueError(f'Generator name is not supported {generator_name}')
     return generators
 
+class RingGeneratorPerLayer():
+    
+    def __init__(self, scaler="energy_sum"):
+        
+        if scaler != "energy_sum":
+            raise ValueError('Only scaler energy_sum is supported')
+        
+        self.scaler = self.parse_scaler(scaler)
+        self.selector = SubGroupSelector(RINGS_PER_LAYERS)
+        self.layer_config = RINGS_PER_LAYERS
+    
+    def __call__(self, X):
+        transformed = self.transform(X)
+        return transformed
+    
+    def parse_scaler(self, scaler_name):
+        scaler = AbsSumScaler()
+        return scaler
+    
+    def transform(self, X, y=None):
+        scaled = self.scaler.transform(X, y)
+        transformed = self.selector.transform(scaled, y)
+        return transformed
+    
+    def fit(self, X, y=None):
+        scaled = self.scaler.fit_transform(X, y)
+        self.selector.fit_transform(scaled, y)
+        self.fitted_ = True
+        return self
+        
+ringer_generators = {
+    "vInception2": RingGeneratorPerLayer()
+}    
 # Defaults to all rings
 default_percentage = lambda : 1.
 ring_percentages = defaultdict(default_percentage)

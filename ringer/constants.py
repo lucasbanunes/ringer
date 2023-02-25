@@ -140,6 +140,16 @@ RINGS_LAYERS = OrderedDict(
     had3 = (96,100),
 )
 
+RINGS_PER_LAYERS = OrderedDict(
+    presample = list(range(0,8)),
+    em1 = list(range(8,72)),
+    em2 = list(range(72, 80)),
+    em3 = list(range(80,88)),
+    had1 = list(range(88,92)),
+    had2 = list(range(92,96)),
+    had3 = list(range(96,100)),
+)
+
 NAMED_DATASETS = {
     'mc16_boosted': os.path.join(
         '..', 

@@ -1,5 +1,7 @@
 from typing import Tuple, Dict
+import numpy as np
 import pandas as pd
+from sklearn.base import TransformerMixin
 
 
 class MinMaxScaler():
@@ -40,3 +42,20 @@ class MinMaxScaler():
 
     def fit_transform(self, data: Dict[str, pd.DataFrame]):
         return self.fit(data).transform(data)
+
+    
+class AbsSumScaler(TransformerMixin):
+    
+    def __init__(self):
+        pass
+    
+    def transform(self, X, y=None):
+        scales = np.abs(X.sum(axis=1))
+        scales[scales == 0] = 1
+        scaled_X = X/scales.reshape(-1,1)
+        return scaled_X
+    
+    
+    def fit(self, X, y=None):
+        self.fitted_ = True
+        return self
