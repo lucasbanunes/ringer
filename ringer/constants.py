@@ -118,12 +118,12 @@ NAMED_ET_ETA_BINS = {
         'eta_key': 'trig_L2_cl_eta'
     },
     'L2Calo_2017_alt': {
-    'et_bins': [15000,20000,30000,40000,50000,np.inf], 
-    'eta_bins': [0,0.8,1.37,1.54,2.37,2.5],
-    'et_inclusives': ['left','left','left','left','both'],
-    'eta_inclusives': ['left','left','left','left','both'],
-    'et_key': 'L2Calo_et',
-    'eta_key': 'L2Calo_eta'
+        'et_bins': [15000,20000,30000,40000,50000,np.inf], 
+        'eta_bins': [0,0.8,1.37,1.54,2.37,2.5],
+        'et_inclusives': ['left','left','left','left','both'],
+        'eta_inclusives': ['left','left','left','left','both'],
+        'et_key': 'L2Calo_et',
+        'eta_key': 'L2Calo_eta'
     }
 }
 
@@ -150,22 +150,20 @@ RINGS_PER_LAYERS = OrderedDict(
     had3 = list(range(96,100)),
 )
 
+home_path = os.path.expanduser("~")
 NAMED_DATASETS = {
     'mc16_boosted': os.path.join(
-        '..', 
-        '..', 
+        home_path, 
         'data',
         'new_mc16_13TeV.302236_309995_341330.sgn.boosted_probes.WZ_llqq_plus_radion_ZZ_llqq_plus_ggH3000.merge.25bins.v2'
     ),
     '2017_medium': os.path.join(
-        '..', 
-        '..', 
+        home_path, 
         'data', 
         'new_data17_13TeV.AllPeriods.sgn.probes_lhmedium_EGAM1.bkg.VProbes_EGAM7.GRL_v97'
     ),
     '2017_vloose': os.path.join(
-        '..', 
-        '..', 
+        home_path, 
         'data', 
         'new_data17_13TeV.AllPeriods.sgn.probes_lhvloose_EGAM1.bkg.vprobes_vlhvloose_EGAM7.GRL_v97.25bins'
     )
