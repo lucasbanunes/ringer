@@ -16,24 +16,31 @@ class LocalDataLoader(object):
         self.test = bool(test)
 
 
-    def get_df_path(self, base_name: str) -> str:
+    def get_df_path(self, base_name: str, et_bin_idx=None, eta_bin_idx=None) -> str:
         dirname = f"{base_name}.parquet"
         df_path = os.path.join(self.dataset_path, dirname)
+        has_idx = (et_bin_idx is not None) and (eta_bin_idx is not None)
         if self.test:
             filename = f"{base_name}_et4_eta0.parquet"
             df_path = os.path.join(df_path, filename)
+        elif has_idx:
+            filename = f"{base_name}_et{et_bin_idx}_eta{eta_bin_idx}.parquet"
+            df_path = os.path.join(df_path, filename)
+            
         return df_path
 
 
-    def load_data_df(self, columns: Union[List[str], None] = None) -> pd.DataFrame:
-        data_df_path = self.get_df_path("data")
+    def load_data_df(self, columns: Union[List[str], None] = None,
+                     et_bin_idx=None, eta_bin_idx=None) -> pd.DataFrame:
+        data_df_path = self.get_df_path("data", et_bin_idx, eta_bin_idx)
         data_df = pd.read_parquet(data_df_path, columns=columns)
         return data_df
 
 
-    def load_ringer_df(self, ringer_version: str, columns: Union[List[str], None] = None) -> pd.DataFrame:
+    def load_ringer_df(self, ringer_version: str, columns: Union[List[str], None] = None,
+                       et_bin_idx=None, eta_bin_idx=None) -> pd.DataFrame:
         base_name = f"ringer_v{ringer_version}"
-        ringer_df_path = self.get_df_path(base_name)
+        ringer_df_path = self.get_df_path(base_name, et_bin_idx, eta_bin_idx)
         ringer_df = pd.read_parquet(ringer_df_path, columns=columns)
         return ringer_df
 
