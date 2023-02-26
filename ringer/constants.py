@@ -140,7 +140,17 @@ RINGS_LAYERS = OrderedDict(
     had3 = (96,100),
 )
 
-RINGS_PER_LAYERS = OrderedDict(
+RINGS_PER_LAYERS_STR = OrderedDict(
+    presample = [RING_COL_NAME.format(ring_num=i) for i in range(0,8)],
+    em1 = [RING_COL_NAME.format(ring_num=i) for i in range(8,72)],
+    em2 = [RING_COL_NAME.format(ring_num=i) for i in range(72, 80)],
+    em3 = [RING_COL_NAME.format(ring_num=i) for i in range(80,88)],
+    had1 = [RING_COL_NAME.format(ring_num=i) for i in range(88,92)],
+    had2 = [RING_COL_NAME.format(ring_num=i) for i in range(92,96)],
+    had3 = [RING_COL_NAME.format(ring_num=i) for i in range(96,100)],
+)
+
+RINGS_PER_LAYERS_IDX = OrderedDict(
     presample = list(range(0,8)),
     em1 = list(range(8,72)),
     em2 = list(range(72, 80)),

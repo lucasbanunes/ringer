@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
+from copy import deepcopy
 from collections import defaultdict
 from sklearn.base import TransformerMixin
-from ringer.constants import RINGS_LAYERS, RING_COL_NAME, GENERATOR_CONFIGS, RINGS_PER_LAYERS
+from ringer.constants import RING_COL_NAME, RINGS_PER_LAYERS_STR, RINGS_PER_LAYERS_IDX
 from ringer.scalers import AbsSumScaler
-from ringer.selectors import SubGroupSelector, SubGroupPercentageSelector
+from ringer.selectors import SubGroupSelector, DataFrameSelector
 
 class BaseGenerator(TransformerMixin):
 
@@ -54,11 +55,13 @@ class PercentageRingGenerator(BaseGenerator):
         super().__init__(scaler)
         self.ring_percentage = ring_percentage
         self.scaler = self.parse_scaler(scaler)
-        self.selector = SubGroupPercentageSelector(
-            RINGS_PER_LAYERS,
-            ring_percentage
-        )
-        self.layer_config = RINGS_PER_LAYERS
+        self.layer_config = deepcopy(RINGS_PER_LAYERS_STR)
+        self.selected_rings = list()
+        for layer_name, layer_rings in self.layer_config.items():
+            limit_idx = int(np.floor(len(layer_rings)*self.ring_percentage))
+            self.selected_rings.extend(layer_rings[:limit_idx])
+        self.selected_rings = np.array(self.selected_rings)
+        self.selector = DataFrameSelector(self.selected_rings)
 
     def transform(self, X, y=None):
         selected = self.selector.transform(X, y)
@@ -77,17 +80,22 @@ class RingGeneratorPerLayer(BaseGenerator):
         
         super().__init__(scaler)
         self.scaler = self.parse_scaler(scaler)
-        self.selector = SubGroupSelector(RINGS_PER_LAYERS)
-        self.layer_config = RINGS_PER_LAYERS
+        self.sub_group_selector = SubGroupSelector(RINGS_PER_LAYERS_IDX)
+        self.layer_config = deepcopy(RINGS_PER_LAYERS_STR)
+        self.selected_rings = [layer_rings for layer_rings in self.layer_config.values()]
+        self.selected_rings = np.concatenate(self.selected_rings)
+        self.df_selector = DataFrameSelector(self.selected_rings)
     
     def transform(self, X, y=None):
-        scaled = self.scaler.transform(X, y)
-        transformed = self.selector.transform(scaled, y)
-        return transformed
+        selected = self.df_selector.transform(X, y)
+        scaled = self.scaler.transform(selected, y)
+        subgroup_selected = self.sub_group_selector.transform(scaled, y)
+        return subgroup_selected
     
     def fit(self, X, y=None):
-        scaled = self.scaler.fit_transform(X, y)
-        self.selector.fit(scaled, y)
+        selected = self.df_selector.fit_transform(X, y)
+        scaled = self.scaler.fit_transform(selected, y)
+        self.sub_group_selector.fit(scaled, y)
         self.fitted_ = True
         return self
 
