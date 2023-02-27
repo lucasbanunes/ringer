@@ -6,7 +6,6 @@ from typing import Dict, Iterable, Union, Tuple, Any
 from numbers import Number
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 
 

@@ -1,41 +1,28 @@
-from kepler.pandas.menu       import ElectronSequence as Chain
-from kepler.pandas.readers    import load, load_in_loop
-from kepler.pandas.decorators import RingerDecorator
-from typing import List
-from itertools import product
-import rootplotlib as rpl
-import mplhep as hep
+import os
 import ROOT
 ROOT.gStyle.SetOptStat(0);
-import numpy as np
-import pandas as pd
-import glob
-import os
-import logging
-import matplotlib.pyplot as plt
-plt.style.use(hep.style.ROOT)
 import warnings
 warnings.filterwarnings('ignore')
 from collections import defaultdict
-from copy import deepcopy
 from argparse import ArgumentParser
-import json
-from Gaugi import GeV
+from typing import List
+from itertools import product
 
-from packages.generators import ringer_generators
-from packages.plotting import make_plot_fig, var_infos, val_label_map
-from packages.utils import get_logger
-from packages.constants import DROP_COLS, L1SEEDS_PER_ENERGY, CRITERIA_CONF_NAMES, ENERGY_CHAINS, TRIG_STEPS
-
-et_bins = [15, 20, 30, 40, 50, 1000000]
-eta_bins = [0.0, 0.8, 1.37, 1.54, 2.37, 2.50]
+from kepler.pandas.menu import ElectronSequence as Chain
+from kepler.pandas.decorators import RingerDecorator
+from ringer.generators import ringer_generators
+from ringer.utils import get_logger
+from ringer.constants import DROP_COLS, L1SEEDS_PER_ENERGY, CRITERIA_CONF_NAMES, ENERGY_CHAINS, TRIG_STEPS
+from ringer.data import NamedDatasetLoader
 
 def parse_args():
+    et_bins = [15, 20, 30, 40, 50, 1000000]
+    eta_bins = [0.0, 0.8, 1.37, 1.54, 2.37, 2.50]
     chain_choices = list(ENERGY_CHAINS.keys())
     et_choices = list(range(len(et_bins)-1))
     eta_choices = list(range(len(eta_bins)-1))
     parser = ArgumentParser()
-    parser.add_argument('--dataset', required=True, help='dataset directory path', dest='datasetpath')
+    parser.add_argument('--dataset', required=True, help='dataset directory path')
     parser.add_argument('--models', nargs='+', required=True, help='models directory path, can be more than one', dest='modelpaths')
     parser.add_argument('--cutbased', action='store_true', help='if passed, plots the cutbased results')
     parser.add_argument('--chains', nargs='+', default=chain_choices, choices=chain_choices, help='chains to be plotted, defults to all chains', type=int, dest='chain_names')
@@ -49,13 +36,11 @@ def parse_args():
     args['chain_names'] = [ENERGY_CHAINS[energy] for energy in args['chain_names']]
     return args
 
-def simulate(datasetpath: str, modelpaths: List[str], cutbased: bool, 
-        chain_names: List[str], dev: bool, ets: List[int], etas: List[int], **kwargs):
-
-    simulation_logger.info('Building decorators')
+def build_decorators(modelpaths: List[str], cutbased: bool):
     decorators = list()
-    trigger_strategies = ['noringer'] if cutbased else list()
     strategy_cols = defaultdict(list)
+    if cutbased:
+        strategy_cols["noringer"] = list()
     for modelpath, criterion in product(modelpaths, CRITERIA_CONF_NAMES.keys()):
         conf_name = CRITERIA_CONF_NAMES[criterion]
         confpath = os.path.join(modelpath, conf_name)
@@ -70,13 +55,13 @@ def simulate(datasetpath: str, modelpaths: List[str], cutbased: bool,
         decorators.append(decorator)
         strategy_cols[ringer_name].append(strat_criterion)
         strategy_cols[ringer_name].append(strat_criterion + '_output')
-        if not ringer_name in trigger_strategies:
-            trigger_strategies.append(ringer_name)
     
-    simulation_logger.info('Building chains')
+    return decorators, strategy_cols
+
+def build_chains(chain_names: List[str], strategy_cols):
     chains = list()
     step_chain_names = list()
-    for chain_name, strategy in product(chain_names, trigger_strategies):
+    for chain_name, strategy in product(chain_names, strategy_cols.keys()):
         spliited_chain_name = chain_name.split('_')
         criterion = spliited_chain_name[1].replace('lh', '')
         step_chain_name = f'HLT_{chain_name.format(strategy=strategy)}'
@@ -96,52 +81,45 @@ def simulate(datasetpath: str, modelpaths: List[str], cutbased: bool,
         else:
             chain = Chain(step_chain_name, L1Seed=l1seed, l2calo_column=l2calo_column)
         chains.append(chain)
+        
+    return chains
 
-    filename_end = '_et{et}_eta{eta}.parquet'
-    dataset_dir, datasetname = os.path.split(datasetpath)
-    dataset_name = datasetname.replace('.parquet', '')
-    simulation_logger.info('Reading schema')
-    with open(os.path.join(dataset_dir, dataset_name + '_schema.json'), 'r') as json_file:
-        data_cols = list(json.load(json_file).keys())
+
+def run_simulation(dataset: str, dev: bool, ets: List[int], etas: List[int],
+                   chains, decorators, strategy_cols):
+    dataset_loader = NamedDatasetLoader(dataset)
+    data_df_dtypes = dataset_loader.get_data_df_dtypes()
+    data_cols = data_df_dtypes.index
     load_cols = [col for col in data_cols if col not in DROP_COLS]
-    output_dir = os.path.join(dataset_dir, 'sim_chains_' + dataset_name)
     last_strat = None
-    # If dev, load only a part of the dataset for last_bin understanding see the if clause 
-    # that uses it bellow
     ibins = product([4], [4]) if dev else product(ets, etas)
     last_bin = 0 if dev else len(ets)*len(etas) - 1
-    for i, bins in enumerate(ibins):
-        et_bin_idx, eta_bin_idx = bins
-        start_msg = f'et {et_bin_idx} eta {eta_bin_idx} '
-        _, datasetname = os.path.split(datasetpath)
-        filepath = os.path.join(datasetpath, datasetname + filename_end.format(et=et_bin_idx, eta=eta_bin_idx))
-        simulation_logger.info(start_msg + f'loading {filepath}')
-        data = pd.read_parquet(filepath, columns=load_cols)
-        simulation_logger.info(start_msg + 'simulating')
+    for i, (et_bin_idx, eta_bin_idx) in enumerate(ibins):
+        start_msg = f'et {et_bin_idx} eta {eta_bin_idx}: '
+        simulation_logger.info(start_msg + "Loading data_df")
+        data = dataset_loader.load_data_df(load_cols, et_bin_idx, eta_bin_idx)
+        simulation_logger.info(start_msg + 'Simulating')
         for decorator in decorators:
             decorator.apply(data)
         for chain in chains:
             chain.apply(data)
-        
+
         for strategy in strategy_cols.keys():
-            outname = f'{strategy}_et{et_bin_idx}_eta{eta_bin_idx}'
-            simulation_logger.info(start_msg + f'generating {outname}')
-            strategy_out = os.path.join(output_dir, strategy + '.parquet')
-            if not os.path.exists(strategy_out):
-                os.makedirs(strategy_out)
-
-            selection_cols = strategy_cols[strategy] + ['id']   # Saves the id for future joining if necessary
+            # Saves the id for future joining if necessary
+            selection_cols = ['id', "region_id"] + strategy_cols[strategy]
             selected_data = data[selection_cols]
-            # This ensures that the schema is saved only at the end
-            if last_strat != strategy and i == last_bin:
-                with open(os.path.join(output_dir, f'{strategy}_schema.json'), 'w') as json_file:
-                    json.dump(selected_data.dtypes.astype(str).to_dict(), json_file, indent=4)
-                last_strat = deepcopy(strategy)
+            simulation_logger.info(start_msg + f'Dumping {strategy}')
+            dataset_loader.dump_strategy_df(selected_data, strategy, et_bin_idx, eta_bin_idx)
 
-            simulation_logger.info(start_msg + f'saving: {outname}')
-            selected_data.to_parquet(os.path.join(strategy_out, outname + '.parquet'))
-    
-    return data
+            
+def simulate(dataset: str, modelpaths: List[str], cutbased: bool, 
+        chain_names: List[str], dev: bool, ets: List[int], etas: List[int], **kwargs):
+
+    simulation_logger.info('Building decorators')
+    decorators, strategy_cols = build_decorators(modelpaths, cutbased)
+    simulation_logger.info('Building chains')
+    chains = build_chains(chain_names, strategy_cols)
+    run_simulation(dataset, dev, ets, etas, chains, decorators, strategy_cols)
 
 
 if __name__ == '__main__':
