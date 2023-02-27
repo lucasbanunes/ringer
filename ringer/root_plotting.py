@@ -1,5 +1,8 @@
 from Gaugi.constants import GeV, MeV
 import rootplotlib as rpl
+import mplhep as hep
+import matplotlib.pyplot as plt
+plt.style.use(hep.style.ROOT)
 
 import seaborn as sns
 import matplotlib.pyplot as plt

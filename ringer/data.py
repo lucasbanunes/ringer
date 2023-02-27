@@ -22,7 +22,7 @@ class LocalDataLoader(object):
         df_path = os.path.join(self.dataset_path, dirname)
         has_idx = (et_bin_idx is not None) and (eta_bin_idx is not None)
         if self.test:
-            filename = f"{base_name}_et4_eta0.parquet"
+            filename = f"{base_name}_et4_eta4.parquet"
             df_path = os.path.join(df_path, filename)
         elif has_idx:
             filename = f"{base_name}_et{et_bin_idx}_eta{eta_bin_idx}.parquet"
