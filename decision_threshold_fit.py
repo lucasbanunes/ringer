@@ -1,3 +1,12 @@
+"""
+How to use this script
+python decision_threshold_fit.py \
+--dataset data17_13TeV.AllPeriods.sgn.probes_lhmedium_EGAM1.bkg.VProbes_EGAM7.GRL_v97 \
+--model /home/lucas.nunes/workspace/ringer_tunings/versions/vInception/v2/jobs_dev01/output \
+--output /home/lucas.nunes/workspace/ringer_tunings/versions/vInception/v2/jobs_dev01/output_fitted \
+--model-version vInception2
+"""
+
 import os
 import sys
 import logging
@@ -42,24 +51,51 @@ def create_op_dict(op):
     }
     return d
 
-def generator( path ):
+# def generator( path ):
+#     def norm1( data ):
+#         norms = np.abs( data.sum(axis=1) )
+#         norms[norms==0] = 1
+#         return data/norms[:,None]
+#     from Gaugi import load
+#     d = load(path)
+#     feature_names = d['features'].tolist()
+
+#     # How many events?
+#     n = d['data'].shape[0]
+    
+#     # extract rings
+#     data_rings = norm1(d['data'][:,1:101])
+#     target = d['target']
+#     avgmu = d['data'][:,0]
+    
+#     return [data_rings], target, avgmu
+
+def generator(path):
+        
+        
     def norm1( data ):
         norms = np.abs( data.sum(axis=1) )
         norms[norms==0] = 1
         return data/norms[:,None]
-    from Gaugi import load
-    d = load(path)
-    feature_names = d['features'].tolist()
 
-    # How many events?
-    n = d['data'].shape[0]
+    from Gaugi import load
+    import numpy as np
+    d = load(path)
+    data = norm1(d['data'])
+    ps_range = np.arange(1,9)
+    ps_data = d['data'][:,ps_range]
     
-    # extract rings
-    data_rings = norm1(d['data'][:,1:101])
+    em_range = np.arange(9,89)
+    em_data = d['data'][:,em_range]
+    
+    had_range = np.arange(89,101)
+    had_data = d['data'][:,had_range]
     target = d['target']
     avgmu = d['data'][:,0]
     
-    return [data_rings], target, avgmu
+    data_rings = [ps_data, em_data, had_data]
+
+    return data_rings, target, avgmu
 
 def add_extra_bin_models(best_models: list):
     best_models.append(list())
@@ -77,11 +113,11 @@ parser = ArgumentParser(
     prog='decision threshold fit',
     description='Script for fitting a decision threshold w.r.t collision pileup for the neural ringer',
 )
-parser.add_argument('--dataset', '-d', nargs=1, type=str, required=True)
-parser.add_argument('--output', '-o', nargs=1, type=str, required=True)
-parser.add_argument('--model', '-m', nargs=1, type=str, required=True)
+parser.add_argument('--dataset', '-d', type=str, required=True)
+parser.add_argument('--output', '-o', type=str, required=True, dest="output_dir")
+parser.add_argument('--model', '-m', type=str, required=True, dest="model_path")
 parser.add_argument('--extra-bin', '-eb', action='store_true', dest='extra_bin')
-parser.add_argument('--model-version', '-mv', nargs=1, type=str, dest='model_version', default='vX')
+parser.add_argument('--model-version', '-mv', type=str, dest='model_version', default='vX')
 
 args = parser.parse_args()
 etbins = [15, 20, 30, 40, 50, 1000000]
