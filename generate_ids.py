@@ -6,6 +6,7 @@ import os
 import json
 from itertools import product
 import numpy as np
+np.random.seed(RANDOM_STATE)
 import pandas as pd
 from Gaugi import load as gload
 from Gaugi import save as gsave
@@ -78,8 +79,6 @@ for region in et_eta_regions:
     data_df["id"] = np.arange(range_start, range_start+len(data_df))
     range_start += len(data_df)
     logger.info(f'Saving (et_idx, eta_idx) {(region.et_idx, region.eta_idx)}')
-    if data_df.empty:
-        raise ValueError('The save_df is empty')
     data_df.to_parquet(out_filepath.format(et=region.et_idx, eta=region.eta_idx))
 
 logger.info('Exporting schema')
