@@ -45,8 +45,9 @@ class LocalDataLoader(object):
         return strategy_df
 
     def dump_data_df(self, data_df: pd.DataFrame, et_bin_idx: int, eta_bin_idx: int):
+        base_name = "data"
         try:
-            data_schema = self.load_schema("data")
+            data_schema = self.load_schema(base_name)
         except FileNotFoundError:
             self.dump_schema(base_name, data_df)
         filename = f"data_et{et_bin_idx}_eta{eta_bin_idx}.parquet"
