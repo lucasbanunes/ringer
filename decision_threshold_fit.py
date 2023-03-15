@@ -4,7 +4,7 @@ python decision_threshold_fit.py \
 --dataset data17_13TeV.AllPeriods.sgn.probes_lhmedium_EGAM1.bkg.VProbes_EGAM7.GRL_v97 \
 --model /home/lucas.nunes/workspace/ringer_tunings/versions/vInception/v2/jobs_dev01/output \
 --output /home/lucas.nunes/workspace/ringer_tunings/versions/vInception/v2/jobs_dev01/output_fitted \
---model-version vInception2
+--model-version vInceptionPerLayer
 """
 
 import os
@@ -22,6 +22,19 @@ from pprint import pprint
 from copy import deepcopy
 from argparse import ArgumentParser
 from tensorflow import keras
+from collections import OrderedDict
+
+
+RINGS_LAYERS = OrderedDict(
+    presample = list(range(0,8)),
+    em1 = list(range(8,72)),
+    em2 = list(range(72, 80)),
+    em3 = list(range(80,88)),
+    had1 = list(range(88,92)),
+    had2 = list(range(92,96)),
+    had3 = list(range(96,100)),
+)
+
 
 def create_op_dict(op):
     d = {
@@ -51,27 +64,7 @@ def create_op_dict(op):
     }
     return d
 
-# def generator( path ):
-#     def norm1( data ):
-#         norms = np.abs( data.sum(axis=1) )
-#         norms[norms==0] = 1
-#         return data/norms[:,None]
-#     from Gaugi import load
-#     d = load(path)
-#     feature_names = d['features'].tolist()
-
-#     # How many events?
-#     n = d['data'].shape[0]
-    
-#     # extract rings
-#     data_rings = norm1(d['data'][:,1:101])
-#     target = d['target']
-#     avgmu = d['data'][:,0]
-    
-#     return [data_rings], target, avgmu
-
 def generator(path):
-        
         
     def norm1( data ):
         norms = np.abs( data.sum(axis=1) )
@@ -81,19 +74,13 @@ def generator(path):
     from Gaugi import load
     import numpy as np
     d = load(path)
-    data = norm1(d['data'])
-    ps_range = np.arange(1,9)
-    ps_data = d['data'][:,ps_range]
+    data = norm1(d['data'][:,1:101])
     
-    em_range = np.arange(9,89)
-    em_data = d['data'][:,em_range]
-    
-    had_range = np.arange(89,101)
-    had_data = d['data'][:,had_range]
-    target = d['target']
-    avgmu = d['data'][:,0]
-    
-    data_rings = [ps_data, em_data, had_data]
+    target =  d['target']
+    avgmu = d['data'][:, 0]
+    data_rings = list()
+    for layer_name, layer_idxs in RINGS_LAYERS.items():
+        data_rings.append(data[:,layer_idxs])
 
     return data_rings, target, avgmu
 
@@ -186,7 +173,7 @@ references = ['tight_cutbased', 'medium_cutbased' , 'loose_cutbased', 'vloose_cu
 for et_bin in range(ref_ets):
     for eta_bin in range(n_etas):
         for name in references:
-            logger.info(f'Loading reference for et bin:{et_bin} eta bin:{eta_bin} name{name}')
+            logger.info(f'Loading reference for et bin:{et_bin} eta bin:{eta_bin} name {name}')
             refObj = ReferenceReader().load(ref_filepath.format(ET=et_bin,ETA=eta_bin))
             _pd = refObj.getSgnPassed(name)/refObj.getSgnTotal(name)
             fa = refObj.getBkgPassed(name)/refObj.getBkgTotal(name)

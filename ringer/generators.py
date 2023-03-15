@@ -102,10 +102,17 @@ class RingGeneratorPerLayer(BaseGenerator):
 # Generators of each ringer
 ringer_generators = {
     "v8": PercentageRingGenerator(ring_percentage=1.),
-    "v8.1": PercentageRingGenerator(ring_percentage=1.),
+    "v8.100": PercentageRingGenerator(ring_percentage=1.),
+    "v10": PercentageRingGenerator(ring_percentage=1.),
+    "v10.100": PercentageRingGenerator(ring_percentage=1.),
     "v12": PercentageRingGenerator(ring_percentage=0.5),
-    "v12.1": PercentageRingGenerator(ring_percentage=0.5),
+    "v12.100": PercentageRingGenerator(ring_percentage=0.5),
+    "v8.5": PercentageRingGenerator(ring_percentage=0.5),
+    "v8.5.100": PercentageRingGenerator(ring_percentage=0.5),
     "v18": PercentageRingGenerator(ring_percentage=0.75),
     "v19": PercentageRingGenerator(ring_percentage=0.25),
-    "vInception2": RingGeneratorPerLayer()
+    "v20": PercentageRingGenerator(ring_percentage=1.),
+    "v20.100": PercentageRingGenerator(ring_percentage=1.),
+    "vInceptionPerLayer": RingGeneratorPerLayer(),
+    "vInceptionPerLayer.100": RingGeneratorPerLayer()
 }  

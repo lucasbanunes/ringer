@@ -1,6 +1,6 @@
 import os
 import ROOT
-ROOT.gStyle.SetOptStat(0);
+ROOT.gStyle.SetOptStat(0)
 import warnings
 warnings.filterwarnings("ignore")
 from collections import defaultdict
@@ -98,6 +98,7 @@ def run_simulation(dataset: str, dev: bool, ets: List[int], etas: List[int],
         start_msg = f"et {et_bin_idx} eta {eta_bin_idx}: "
         simulation_logger.info(start_msg + "Loading data_df")
         data = dataset_loader.load_data_df(load_cols, et_bin_idx, eta_bin_idx)
+        id_cols = data.columns[data.columns.str.endswith("id")].to_list()
         simulation_logger.info(start_msg + "Simulating")
         for decorator in decorators:
             decorator.apply(data)
@@ -106,7 +107,7 @@ def run_simulation(dataset: str, dev: bool, ets: List[int], etas: List[int],
 
         for strategy in strategy_cols.keys():
             # Saves the id for future joining if necessary
-            selection_cols = ["id", "region_id"] + strategy_cols[strategy]
+            selection_cols = id_cols + strategy_cols[strategy]
             selected_data = data[selection_cols]
             simulation_logger.info(start_msg + f"Dumping {strategy}")
             dataset_loader.dump_strategy_df(selected_data, strategy, et_bin_idx, eta_bin_idx)
